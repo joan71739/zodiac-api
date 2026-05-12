@@ -1,0 +1,109 @@
+package com.project.zodiac_api.controller;
+
+import com.project.zodiac_api.dto.*;
+import com.project.zodiac_api.exception.ResourceNotFoundException;
+import com.project.zodiac_api.model.*;
+import com.project.zodiac_api.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+@RestController
+@RequestMapping("/api/export")
+@RequiredArgsConstructor
+public class ExportController {
+
+    private final ClientRepository clientRepo;
+    private final PlanetPositionRepository planetRepo;
+    private final HouseRulerRepository houseRepo;
+    private final AspectRepository aspectRepo;
+    private final AnalysisNoteRepository noteRepo;
+    private final ConsultationLogRepository logRepo;
+    private final PlanetPositionRepository planetPositionRepo;
+    private final ObjectMapper objectMapper;
+
+    // GET /api/export/clients
+    @GetMapping("/clients")
+    public ResponseEntity<byte[]> exportClients() throws Exception {
+        List<ClientResponseDto> data = clientRepo.findAll().stream()
+                .map(ClientResponseDto::from)
+                .toList();
+        return buildResponse(data, "export_clients.json");
+    }
+
+    // GET /api/export/clients/{id}/chart
+    @GetMapping("/clients/{id}/chart")
+    public ResponseEntity<byte[]> exportChart(@PathVariable Integer id) throws Exception {
+        Client client = clientRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", id));
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("client", ClientResponseDto.from(client));
+        data.put("planets", planetRepo.findByClientId(id).stream().map(PlanetPositionDto::from).toList());
+        data.put("houses",  houseRepo.findByClientIdOrderByHouseNumberAsc(id).stream().map(HouseRulerDto::from).toList());
+        data.put("aspects", aspectRepo.findByClientId(id).stream().map(AspectDto::from).toList());
+
+        return buildResponse(data, "export_chart_" + id + ".json");
+    }
+
+    // GET /api/export/clients/{id}/notes
+    @GetMapping("/clients/{id}/notes")
+    public ResponseEntity<byte[]> exportNotes(@PathVariable Integer id) throws Exception {
+        if (!clientRepo.existsById(id)) throw new ResourceNotFoundException("Client", id);
+
+        List<AnalysisNoteDto> data = noteRepo.findByClientIdOrderBySortOrderAsc(id).stream()
+                .map(AnalysisNoteDto::from)
+                .toList();
+        return buildResponse(data, "export_notes_" + id + ".json");
+    }
+
+    // GET /api/export/clients/{id}/logs
+    @GetMapping("/clients/{id}/logs")
+    public ResponseEntity<byte[]> exportLogs(@PathVariable Integer id) throws Exception {
+        if (!clientRepo.existsById(id)) throw new ResourceNotFoundException("Client", id);
+
+        List<ConsultationLogDto> data = logRepo.findByClientIdOrderByConsultationDateDesc(id).stream()
+                .map(ConsultationLogDto::from)
+                .toList();
+        return buildResponse(data, "export_logs_" + id + ".json");
+    }
+
+    // GET /api/export/search?planet=xx&sign=xx&degreeFrom=xx&degreeTo=xx&house=xx
+    @GetMapping("/search")
+    public ResponseEntity<byte[]> exportSearch(
+            @RequestParam String planet,
+            @RequestParam String sign,
+            @RequestParam(required = false) Short degreeFrom,
+            @RequestParam(required = false) Short degreeTo,
+            @RequestParam(required = false) Integer house) throws Exception {
+
+        if (planet == null || planet.isBlank() || sign == null || sign.isBlank()) {
+            throw new IllegalArgumentException("planet 與 sign 為必填參數");
+        }
+
+        List<Integer> clientIds = planetPositionRepo.search(planet, sign, degreeFrom, degreeTo, house)
+                .stream().map(PlanetPosition::getClientId).distinct().toList();
+
+        List<ClientResponseDto> data = clientRepo.findAllById(clientIds).stream()
+                .map(ClientResponseDto::from)
+                .toList();
+
+        return buildResponse(data, "export_search.json");
+    }
+
+    // ── helper ──────────────────────────────────────────
+
+    private ResponseEntity<byte[]> buildResponse(Object data, String filename) throws Exception {
+        byte[] bytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(data);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header("Content-Encoding", "UTF-8")
+                .body(bytes);
+    }
+}
