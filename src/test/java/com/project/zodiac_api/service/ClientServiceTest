@@ -1,0 +1,174 @@
+package com.project.zodiac_api.service;
+
+import com.project.zodiac_api.dto.ClientRequestDto;
+import com.project.zodiac_api.dto.ClientResponseDto;
+import com.project.zodiac_api.exception.ResourceNotFoundException;
+import com.project.zodiac_api.model.Client;
+import com.project.zodiac_api.repository.ClientRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ClientService 單元測試")
+class ClientServiceTest {
+
+    @Mock
+    private ClientRepository clientRepo;
+
+    @InjectMocks
+    private ClientService clientService;
+
+    private Client sampleClient;
+
+    @BeforeEach
+    void setUp() {
+        sampleClient = new Client();
+        sampleClient.setId(1);
+        sampleClient.setName("王小明");
+        sampleClient.setBirthDate(LocalDate.of(1993, 8, 10));
+        sampleClient.setBirthTime(LocalTime.of(8, 30));
+        sampleClient.setBirthPlace("台北");
+    }
+
+    // ── GET ALL ─────────────────────────────────────────
+
+    @Test
+    @DisplayName("取得所有客戶 — 回傳正確數量")
+    void getAll_returnsAllClients() {
+        when(clientRepo.findAll()).thenReturn(List.of(sampleClient));
+
+        List<ClientResponseDto> result = clientService.getAll();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("王小明");
+        verify(clientRepo, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("無客戶資料時回傳空列表")
+    void getAll_emptyList() {
+        when(clientRepo.findAll()).thenReturn(List.of());
+
+        List<ClientResponseDto> result = clientService.getAll();
+
+        assertThat(result).isEmpty();
+    }
+
+    // ── GET BY ID ───────────────────────────────────────
+
+    @Test
+    @DisplayName("以 id 取得客戶 — 存在時正確回傳")
+    void getById_existing_returnsClient() {
+        when(clientRepo.findById(1)).thenReturn(Optional.of(sampleClient));
+
+        ClientResponseDto result = clientService.getById(1);
+
+        assertThat(result.getId()).isEqualTo(1);
+        assertThat(result.getName()).isEqualTo("王小明");
+        assertThat(result.getBirthPlace()).isEqualTo("台北");
+    }
+
+    @Test
+    @DisplayName("以 id 取得客戶 — 不存在時拋出 ResourceNotFoundException")
+    void getById_notFound_throwsException() {
+        when(clientRepo.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clientService.getById(999))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // ── CREATE ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("新增客戶 — 正確儲存並回傳")
+    void create_savesAndReturnsClient() {
+        ClientRequestDto req = new ClientRequestDto();
+        req.setName("林小美");
+        req.setBirthDate(LocalDate.of(1995, 3, 15));
+        req.setBirthTime(LocalTime.of(12, 0));
+        req.setBirthPlace("高雄");
+
+        Client saved = new Client();
+        saved.setId(2);
+        saved.setName("林小美");
+        saved.setBirthDate(req.getBirthDate());
+        saved.setBirthTime(req.getBirthTime());
+        saved.setBirthPlace("高雄");
+
+        when(clientRepo.save(any(Client.class))).thenReturn(saved);
+
+        ClientResponseDto result = clientService.create(req);
+
+        assertThat(result.getId()).isEqualTo(2);
+        assertThat(result.getName()).isEqualTo("林小美");
+        verify(clientRepo, times(1)).save(any(Client.class));
+    }
+
+    // ── UPDATE ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("編輯客戶 — 正確更新欄位")
+    void update_updatesFieldsCorrectly() {
+        when(clientRepo.findById(1)).thenReturn(Optional.of(sampleClient));
+        when(clientRepo.save(any(Client.class))).thenReturn(sampleClient);
+
+        ClientRequestDto req = new ClientRequestDto();
+        req.setName("王大明");
+        req.setBirthDate(LocalDate.of(1993, 8, 10));
+        req.setBirthTime(LocalTime.of(8, 30));
+        req.setBirthPlace("新北");
+
+        ClientResponseDto result = clientService.update(1, req);
+
+        assertThat(sampleClient.getName()).isEqualTo("王大明");
+        assertThat(sampleClient.getBirthPlace()).isEqualTo("新北");
+    }
+
+    @Test
+    @DisplayName("編輯客戶 — 不存在時拋出 ResourceNotFoundException")
+    void update_notFound_throwsException() {
+        when(clientRepo.findById(999)).thenReturn(Optional.empty());
+
+        ClientRequestDto req = new ClientRequestDto();
+        req.setName("不存在");
+
+        assertThatThrownBy(() -> clientService.update(999, req))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // ── DELETE ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("刪除客戶 — 正確呼叫 repository")
+    void delete_existingClient_callsRepo() {
+        when(clientRepo.findById(1)).thenReturn(Optional.of(sampleClient));
+        doNothing().when(clientRepo).delete(sampleClient);
+
+        clientService.delete(1);
+
+        verify(clientRepo, times(1)).delete(sampleClient);
+    }
+
+    @Test
+    @DisplayName("刪除客戶 — 不存在時拋出 ResourceNotFoundException")
+    void delete_notFound_throwsException() {
+        when(clientRepo.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clientService.delete(999))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+}
