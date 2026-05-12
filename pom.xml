@@ -12,9 +12,9 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.zodiac</groupId>
+    <groupId>com.project</groupId>
     <artifactId>zodiac-api</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1-SNAPSHOT</version>
     <name>zodiac-api</name>
     <description>占星顧問後台系統 API</description>
 
@@ -61,7 +61,7 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- HTTP Client (for Claude API) -->
+        <!-- WebFlux（用於 Claude API HTTP 呼叫）-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
