@@ -36,7 +36,7 @@ public class PlanetPositionService {
         List<PlanetPosition> entities = dtos.stream().map(dto -> {
             PlanetPosition p = new PlanetPosition();
             p.setClientId(clientId);
-            mapDto(dto, p);
+            mapDto(dto, p);   // ← mapDto 已含 isLord，自動帶入
             return p;
         }).toList();
 
@@ -51,7 +51,7 @@ public class PlanetPositionService {
         PlanetPosition p = planetRepo.findById(pid)
                 .filter(x -> x.getClientId().equals(clientId))
                 .orElseThrow(() -> new ResourceNotFoundException("PlanetPosition", pid));
-        mapDto(dto, p);
+        mapDto(dto, p);   // ← mapDto 已含 isLord，自動帶入
         return PlanetPositionDto.from(planetRepo.save(p));
     }
 
@@ -70,5 +70,6 @@ public class PlanetPositionService {
         p.setMinuteNum(dto.getMinuteNum());
         p.setHouse(dto.getHouse());
         p.setNotes(dto.getNotes());
+        p.setIsLord(dto.getIsLord() != null ? dto.getIsLord() : false);  // v8 新增
     }
 }

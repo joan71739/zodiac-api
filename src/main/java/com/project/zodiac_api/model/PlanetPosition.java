@@ -35,4 +35,8 @@ public class PlanetPosition {
 
     @Column(length = 200)
     private String notes;
+
+    // v8 新增：是否為命主星
+    @Column(name = "is_lord", nullable = false)
+    private Boolean isLord = false;
 }

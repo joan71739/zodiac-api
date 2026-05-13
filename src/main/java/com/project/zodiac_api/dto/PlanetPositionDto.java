@@ -17,6 +17,9 @@ public class PlanetPositionDto {
     private Integer house;
     private String notes;
 
+    // v8 新增：是否為命主星
+    private Boolean isLord;
+
     public static PlanetPositionDto from(PlanetPosition p) {
         PlanetPositionDto dto = new PlanetPositionDto();
         dto.id        = p.getId();
@@ -26,6 +29,7 @@ public class PlanetPositionDto {
         dto.minuteNum = p.getMinuteNum();
         dto.house     = p.getHouse();
         dto.notes     = p.getNotes();
+        dto.isLord    = p.getIsLord() != null ? p.getIsLord() : false;  // v8 新增
         return dto;
     }
 }
