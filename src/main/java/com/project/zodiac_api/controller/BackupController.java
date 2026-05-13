@@ -45,13 +45,22 @@ public class BackupController {
     @Value("${app.backup.psql-path:psql}")
     private String psqlPath;
 
+    @Value("${app.backup.db-password:}")
+    private String dbPassword;
+
     // ── API ─────────────────────────────────────────────
 
-    // POST /api/backup  （手動觸發）
     @PostMapping
-    public ResponseEntity<Map<String, Object>> backup() throws IOException, InterruptedException {
-        BackupRecord record = performBackup("手動備份");
-        return ResponseEntity.ok(toMap(record));
+    public ResponseEntity<Map<String, Object>> backup() {
+        new Thread(() -> {
+            try {
+                performBackup("手動備份");
+                log.info("[Backup] 手動備份完成");
+            } catch (Exception e) {
+                log.error("[Backup] 手動備份失敗: {}", e.getMessage());
+            }
+        }).start();
+        return ResponseEntity.ok(Map.of("message", "備份已啟動，請稍後重新整理列表"));
     }
 
     // GET /api/backup/list
@@ -88,8 +97,7 @@ public class BackupController {
                 "-d", dbName,
                 "-f", filePath.toAbsolutePath().toString()
         );
-        pb.environment().put("PGPASSWORD", System.getenv("DB_PASSWORD") != null
-                ? System.getenv("DB_PASSWORD") : "");
+        pb.environment().put("PGPASSWORD", dbPassword);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -137,10 +145,18 @@ public class BackupController {
                 "-d", dbName,
                 "-f", dest.toAbsolutePath().toString()
         );
-        pb.environment().put("PGPASSWORD", System.getenv("DB_PASSWORD") != null
-                ? System.getenv("DB_PASSWORD") : "");
+        pb.environment().put("PGPASSWORD", dbPassword);
         pb.redirectErrorStream(true);
         Process process = pb.start();
+        // 讀取 pg_dump 的輸出，避免 buffer 塞住
+        StringBuilder output = new StringBuilder();
+        try (var reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+        }
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {
