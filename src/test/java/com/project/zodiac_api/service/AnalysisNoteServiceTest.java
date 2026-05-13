@@ -45,19 +45,20 @@ class AnalysisNoteServiceTest {
     }
 
     @Test
-    @DisplayName("取得解析列表 — 依 sortOrder 升序回傳")
-    void getByClientId_returnsSortedList() {
+    @DisplayName("取得解析列表 — 依 sortOrder 降序回傳（最新在最上面）")
+    void getByClientId_returnsSortedListDesc() {
         when(clientRepo.existsById(1)).thenReturn(true);
 
-        AnalysisNote n1 = makeNote(1, 1, "感情", "...", 1);
+        // sortOrder 高的（較新）排前面
         AnalysisNote n2 = makeNote(2, 1, "事業", "...", 2);
-        when(noteRepo.findByClientIdOrderBySortOrderAsc(1)).thenReturn(List.of(n1, n2));
+        AnalysisNote n1 = makeNote(1, 1, "感情", "...", 1);
+        when(noteRepo.findByClientIdOrderBySortOrderDesc(1)).thenReturn(List.of(n2, n1));
 
         List<AnalysisNoteDto> result = noteService.getByClientId(1);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getTitle()).isEqualTo("感情");
-        assertThat(result.get(1).getTitle()).isEqualTo("事業");
+        assertThat(result.get(0).getTitle()).isEqualTo("事業");   // sortOrder=2，最新
+        assertThat(result.get(1).getTitle()).isEqualTo("感情");   // sortOrder=1，較舊
     }
 
     // ── CREATE — sortOrder 自動遞增 ──────────────────────
@@ -75,9 +76,8 @@ class AnalysisNoteServiceTest {
         dto.setTitle("第一筆");
         dto.setContent("內容");
 
-        AnalysisNoteDto result = noteService.create(1, dto);
+        noteService.create(1, dto);
 
-        // 驗證 save 被呼叫時 sortOrder 已設為 1
         ArgumentCaptor<AnalysisNote> captor = ArgumentCaptor.forClass(AnalysisNote.class);
         verify(noteRepo).save(captor.capture());
         assertThat(captor.getValue().getSortOrder()).isEqualTo(1);

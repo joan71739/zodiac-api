@@ -17,10 +17,10 @@ public class AnalysisNoteService {
     private final AnalysisNoteRepository noteRepo;
     private final ClientRepository clientRepo;
 
-    // GET — 依 sort_order 升序
+    // GET — 依 sort_order 降序（v8：最新的在最上面）
     public List<AnalysisNoteDto> getByClientId(Integer clientId) {
         ensureClientExists(clientId);
-        return noteRepo.findByClientIdOrderBySortOrderAsc(clientId).stream()
+        return noteRepo.findByClientIdOrderBySortOrderDesc(clientId).stream()
                 .map(AnalysisNoteDto::from)
                 .toList();
     }
