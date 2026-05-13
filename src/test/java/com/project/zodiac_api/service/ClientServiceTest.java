@@ -156,11 +156,10 @@ class ClientServiceTest {
     @DisplayName("刪除客戶 — 正確呼叫 repository")
     void delete_existingClient_callsRepo() {
         when(clientRepo.findById(1)).thenReturn(Optional.of(sampleClient));
-        doNothing().when(clientRepo).delete(sampleClient);
 
         clientService.delete(1);
 
-        verify(clientRepo, times(1)).delete(sampleClient);
+        verify(clientRepo, times(1)).deleteById(1);
     }
 
     @Test

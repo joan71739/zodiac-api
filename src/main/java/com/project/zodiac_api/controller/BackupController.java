@@ -39,6 +39,12 @@ public class BackupController {
     @Value("${app.backup.db-user}")
     private String dbUser;
 
+    @Value("${app.backup.pg-dump-path:pg_dump}")
+    private String pgDumpPath;
+
+    @Value("${app.backup.psql-path:psql}")
+    private String psqlPath;
+
     // ── API ─────────────────────────────────────────────
 
     // POST /api/backup  （手動觸發）
@@ -75,7 +81,7 @@ public class BackupController {
 
         // psql 還原
         ProcessBuilder pb = new ProcessBuilder(
-                "psql",
+                psqlPath,
                 "-h", dbHost,
                 "-p", dbPort,
                 "-U", dbUser,
@@ -124,7 +130,7 @@ public class BackupController {
 
         // pg_dump 備份
         ProcessBuilder pb = new ProcessBuilder(
-                "pg_dump",
+                pgDumpPath,
                 "-h", dbHost,
                 "-p", dbPort,
                 "-U", dbUser,
