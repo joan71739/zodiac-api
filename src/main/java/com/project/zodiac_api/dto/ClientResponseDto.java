@@ -18,6 +18,17 @@ public class ClientResponseDto {
     private LocalDate birthDate;
     private LocalTime birthTime;
     private String birthPlace;
+
+     // ── v9：上升 / 天頂四軸資訊（允許 null）────────────────────────────
+    private String ascSign;
+    private Short  ascDegreeNum;
+    private Short  ascMinuteNum;
+ 
+    private String mcSign;
+    private Short  mcDegreeNum;
+    private Short  mcMinuteNum;
+    // ─────────────────────────────────────────────────────────────────────
+    
     private LocalDateTime createdAt;
 
     public static ClientResponseDto from(Client c) {
@@ -27,6 +38,13 @@ public class ClientResponseDto {
         dto.birthDate   = c.getBirthDate();
         dto.birthTime   = c.getBirthTime();
         dto.birthPlace  = c.getBirthPlace();
+        // v9：四軸資訊
+        dto.ascSign      = c.getAscSign();
+        dto.ascDegreeNum = c.getAscDegreeNum();
+        dto.ascMinuteNum = c.getAscMinuteNum();
+        dto.mcSign       = c.getMcSign();
+        dto.mcDegreeNum  = c.getMcDegreeNum();
+        dto.mcMinuteNum  = c.getMcMinuteNum();
         dto.createdAt   = c.getCreatedAt();
         return dto;
     }
