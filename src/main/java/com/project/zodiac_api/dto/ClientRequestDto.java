@@ -19,5 +19,15 @@ public class ClientRequestDto {
     private LocalDate birthDate;
     private LocalTime birthTime;
     private String birthPlace;
+
+ // ── v9：上升 / 天頂四軸資訊（選填，允許 null）──────────────────────
+    private String ascSign;
+    private Short  ascDegreeNum;
+    private Short  ascMinuteNum;
+ 
+    private String mcSign;
+    private Short  mcDegreeNum;
+    private Short  mcMinuteNum;
+    // ─────────────────────────────────────────────────────────────────────
 }
  
