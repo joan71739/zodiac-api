@@ -9,10 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 
 @Slf4j
@@ -38,13 +40,26 @@ public class AIService {
     private String signsKnowledge;
     private String aspectsKnowledge;
 
+    // Fix #2：WebClient 作為 singleton，@PostConstruct 建立一次，避免每次請求重新 build
+    private WebClient webClient;
+
     @PostConstruct
-    public void loadKnowledge() {
+    public void init() {
+        // 知識庫一次性載入
         planetsKnowledge = readResource("astrology/planets.txt");
         housesKnowledge  = readResource("astrology/houses.txt");
         signsKnowledge   = readResource("astrology/signs.txt");
         aspectsKnowledge = readResource("astrology/aspects.txt");
         log.info("[AI] 占星知識庫載入完成");
+
+        // Fix #2：WebClient singleton 初始化
+        this.webClient = webClientBuilder
+                .baseUrl("https://api.anthropic.com")
+                .defaultHeader("x-api-key", apiKey)
+                .defaultHeader("anthropic-version", "2023-06-01")
+                .defaultHeader("content-type", MediaType.APPLICATION_JSON_VALUE)
+                .build();
+        log.info("[AI] WebClient 初始化完成");
     }
 
     /**
@@ -68,28 +83,30 @@ public class AIService {
         body.put("messages", messages);
 
         try {
-            WebClient client = webClientBuilder
-                    .baseUrl("https://api.anthropic.com")
-                    .defaultHeader("x-api-key", apiKey)
-                    .defaultHeader("anthropic-version", "2023-06-01")
-                    .defaultHeader("content-type", MediaType.APPLICATION_JSON_VALUE)
-                    .build();
-
-            String responseBody = client.post()
+            String responseBody = webClient.post()
                     .uri("/v1/messages")
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    // Fix #1：設定 60 秒 timeout，避免執行緒永久掛起
+                    .block(Duration.ofSeconds(60));
 
             // 解析回應：取 content[0].text
             Map<?, ?> responseMap = objectMapper.readValue(responseBody, Map.class);
             List<?> content = (List<?>) responseMap.get("content");
-            if (content == null || content.isEmpty()) {
+            if (CollectionUtils.isEmpty(content)) {
                 throw new RuntimeException("Claude API 回傳空內容");
             }
+            // Fix #3：補 firstBlock 與 text 的 null check
             Map<?, ?> firstBlock = (Map<?, ?>) content.get(0);
-            return (String) firstBlock.get("text");
+            if (firstBlock == null) {
+                throw new RuntimeException("Claude API 回傳內容格式異常");
+            }
+            String text = (String) firstBlock.get("text");
+            if (text == null || text.isBlank()) {
+                throw new RuntimeException("Claude API 回傳空 text");
+            }
+            return text;
 
         } catch (Exception e) {
             log.error("[AI] Claude API 呼叫失敗: {}", e.getMessage());
@@ -100,13 +117,22 @@ public class AIService {
     // ── 私有方法 ─────────────────────────────────────────
 
     private String buildSystemPrompt(String noteTitle, String noteContent) {
+        // Fix #4：四段知識庫加上明確標籤，協助 AI 辨別來源
         return """
                 你是一位專業的占星顧問助理，協助占星師整理與分析命盤解讀筆記。
 
                 ===== 占星知識庫 =====
+
+                [行星知識]
                 %s
+
+                [宮位知識]
                 %s
+
+                [星座知識]
                 %s
+
+                [相位知識]
                 %s
 
                 ===== 當前解析背景 =====
@@ -119,7 +145,7 @@ public class AIService {
                 housesKnowledge,
                 signsKnowledge,
                 aspectsKnowledge,
-                noteTitle  != null ? noteTitle  : "（無標題）",
+                noteTitle   != null ? noteTitle   : "（無標題）",
                 noteContent != null ? noteContent : "（無內容）"
         );
     }
