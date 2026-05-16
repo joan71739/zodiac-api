@@ -36,7 +36,7 @@ public class PlanetPositionService {
         List<PlanetPosition> entities = dtos.stream().map(dto -> {
             PlanetPosition p = new PlanetPosition();
             p.setClientId(clientId);
-            mapDto(dto, p);   // ← mapDto 已含 isLord，自動帶入
+            mapDto(dto, p);
             return p;
         }).toList();
 
@@ -46,12 +46,22 @@ public class PlanetPositionService {
     }
 
     // PUT — 單筆編輯
+    // v8 BUG FIX：若 isLord=true，先清除同 client 所有行星的 isLord，
+    //             再設定當前行星 isLord=true，確保全局唯一性。
+    //             @Transactional 確保 clearLord + save 為同一個 DB transaction。
+    @Transactional
     public PlanetPositionDto update(Integer clientId, Integer pid, PlanetPositionDto dto) {
         ensureClientExists(clientId);
         PlanetPosition p = planetRepo.findById(pid)
                 .filter(x -> x.getClientId().equals(clientId))
                 .orElseThrow(() -> new ResourceNotFoundException("PlanetPosition", pid));
-        mapDto(dto, p);   // ← mapDto 已含 isLord，自動帶入
+
+        // 若此次要設為命主星，先清除同 client 所有 isLord
+        if (Boolean.TRUE.equals(dto.getIsLord())) {
+            planetRepo.clearLordByClientId(clientId);
+        }
+
+        mapDto(dto, p);
         return PlanetPositionDto.from(planetRepo.save(p));
     }
 
@@ -70,6 +80,6 @@ public class PlanetPositionService {
         p.setMinuteNum(dto.getMinuteNum());
         p.setHouse(dto.getHouse());
         p.setNotes(dto.getNotes());
-        p.setIsLord(dto.getIsLord() != null ? dto.getIsLord() : false);  // v8 新增
+        p.setIsLord(dto.getIsLord() != null ? dto.getIsLord() : false);
     }
 }

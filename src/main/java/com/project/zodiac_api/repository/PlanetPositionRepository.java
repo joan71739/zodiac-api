@@ -2,6 +2,7 @@ package com.project.zodiac_api.repository;
 
 import com.project.zodiac_api.model.PlanetPosition;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,6 +15,15 @@ public interface PlanetPositionRepository extends JpaRepository<PlanetPosition, 
     List<PlanetPosition> findByClientId(Integer clientId);
 
     void deleteByClientId(Integer clientId);
+
+    /**
+     * v8 BUG FIX：清除同一 client 所有行星的 is_lord 旗標。
+     * 在 update() 設定 isLord=true 之前呼叫，確保全局唯一性。
+     * 需搭配 @Transactional 使用。
+     */
+    @Modifying
+    @Query("UPDATE PlanetPosition p SET p.isLord = false WHERE p.clientId = :clientId")
+    void clearLordByClientId(@Param("clientId") Integer clientId);
 
     /**
      * 篩選客戶用查詢。
