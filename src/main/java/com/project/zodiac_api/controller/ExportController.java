@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @RestController
@@ -19,7 +20,7 @@ import java.util.*;
 public class ExportController {
 
     private final ClientRepository clientRepo;
-    private final PlanetPositionRepository planetPositionRepo;   // ✅ 修正：移除重複的 planetRepo，統一使用此名稱
+    private final PlanetPositionRepository planetPositionRepo;
     private final HouseRulerRepository houseRepo;
     private final AspectRepository aspectRepo;
     private final AnalysisNoteRepository noteRepo;
@@ -42,8 +43,8 @@ public class ExportController {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", id));
 
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("client", ClientResponseDto.from(client));
-        data.put("planets", planetPositionRepo.findByClientId(id).stream().map(PlanetPositionDto::from).toList()); // ✅ 修正：原 planetRepo → planetPositionRepo
+        data.put("client",  ClientResponseDto.from(client));
+        data.put("planets", planetPositionRepo.findByClientId(id).stream().map(PlanetPositionDto::from).toList());
         data.put("houses",  houseRepo.findByClientIdOrderByHouseNumberAsc(id).stream().map(HouseRulerDto::from).toList());
         data.put("aspects", aspectRepo.findByClientId(id).stream().map(AspectDto::from).toList());
 
@@ -55,7 +56,7 @@ public class ExportController {
     public ResponseEntity<byte[]> exportNotes(@PathVariable Integer id) throws Exception {
         if (!clientRepo.existsById(id)) throw new ResourceNotFoundException("Client", id);
 
-        List<AnalysisNoteDto> data = noteRepo.findByClientIdOrderBySortOrderDesc(id).stream()
+        List<AnalysisNoteDto> data = noteRepo.findByClientIdOrderBySortOrderAsc(id).stream()
                 .map(AnalysisNoteDto::from)
                 .toList();
         return buildResponse(data, "export_notes_" + id + ".json");
@@ -99,10 +100,12 @@ public class ExportController {
 
     private ResponseEntity<byte[]> buildResponse(Object data, String filename) throws Exception {
         byte[] bytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(data);
+        // FIX：移除錯誤的 Content-Encoding: UTF-8（該 header 用於描述壓縮編碼，非字元編碼）
+        //      改用 MediaType 正確附加 charset=UTF-8 至 Content-Type
+        MediaType contentType = new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(contentType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .header("Content-Encoding", "UTF-8")
                 .body(bytes);
     }
 }
