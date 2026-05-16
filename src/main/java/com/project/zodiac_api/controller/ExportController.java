@@ -55,7 +55,7 @@ public class ExportController {
     public ResponseEntity<byte[]> exportNotes(@PathVariable Integer id) throws Exception {
         if (!clientRepo.existsById(id)) throw new ResourceNotFoundException("Client", id);
 
-        List<AnalysisNoteDto> data = noteRepo.findByClientIdOrderBySortOrderAsc(id).stream()
+        List<AnalysisNoteDto> data = noteRepo.findByClientIdOrderBySortOrderDesc(id).stream()
                 .map(AnalysisNoteDto::from)
                 .toList();
         return buildResponse(data, "export_notes_" + id + ".json");

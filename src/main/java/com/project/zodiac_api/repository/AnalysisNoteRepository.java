@@ -15,9 +15,6 @@ public interface AnalysisNoteRepository extends JpaRepository<AnalysisNote, Inte
     // v8：改用降序（最新的在最上面）
     List<AnalysisNote> findByClientIdOrderBySortOrderDesc(Integer clientId);
 
-    // 保留升序供測試或其他用途
-    List<AnalysisNote> findByClientIdOrderBySortOrderAsc(Integer clientId);
-
     Optional<AnalysisNote> findByClientIdAndId(Integer clientId, Integer id);
 
     @Query("SELECT COALESCE(MAX(n.sortOrder), 0) FROM AnalysisNote n WHERE n.clientId = :clientId")
