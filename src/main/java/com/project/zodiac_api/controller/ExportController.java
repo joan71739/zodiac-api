@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/export")
@@ -82,15 +83,23 @@ public class ExportController {
             @RequestParam(required = false) Short degreeTo,
             @RequestParam(required = false) Integer house) throws Exception {
 
-        if (planet == null || planet.isBlank() || sign == null || sign.isBlank()) {
+        // FIX #1: 同 SearchController，planet/sign 非 null 由框架保證，
+        //         僅需 isBlank() 攔截空字串。
+        if (planet.isBlank() || sign.isBlank()) {
             throw new IllegalArgumentException("planet 與 sign 為必填參數");
         }
 
         List<Integer> clientIds = planetPositionRepo.search(planet, sign, degreeFrom, degreeTo, house)
                 .stream().map(PlanetPosition::getClientId).distinct().toList();
 
-        List<ClientResponseDto> data = clientRepo.findAllById(clientIds).stream()
-                .map(ClientResponseDto::from)
+        // FIX #2: 同 SearchController，Map 重建保證匯出資料順序與搜尋結果一致，
+        //         containsKey filter 同時可安全跳過孤兒 clientId。
+        Map<Integer, Client> clientMap = clientRepo.findAllById(clientIds).stream()
+                .collect(Collectors.toMap(Client::getId, c -> c));
+
+        List<ClientResponseDto> data = clientIds.stream()
+                .filter(clientMap::containsKey)
+                .map(id -> ClientResponseDto.from(clientMap.get(id)))
                 .toList();
 
         return buildResponse(data, "export_search.json");
