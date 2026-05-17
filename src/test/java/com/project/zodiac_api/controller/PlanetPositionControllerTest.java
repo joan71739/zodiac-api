@@ -34,8 +34,8 @@ class PlanetPositionControllerTest {
     @Test
     @DisplayName("GET /api/clients/1/planets — 200 回傳行星列表，含 isLord 欄位")
     void getAll_returns200WithIsLord() throws Exception {
-        PlanetPositionDto sun  = makeDto(1, "太陽",  false);
-        PlanetPositionDto venus = makeDto(2, "金星", true);
+        PlanetPositionDto sun  = makeDto(Integer.valueOf(1), "太陽",  false);
+        PlanetPositionDto venus = makeDto(Integer.valueOf(2), "金星", true);
         when(planetService.getByClientId(1)).thenReturn(List.of(sun, venus));
 
         mockMvc.perform(get("/api/clients/1/planets"))
@@ -65,7 +65,7 @@ class PlanetPositionControllerTest {
     @DisplayName("POST /api/clients/1/planets — 201 整批建立成功，回傳含 id 與 isLord")
     void createBatch_returns201() throws Exception {
         PlanetPositionDto req = makeDto(null, "金星", true);
-        PlanetPositionDto saved = makeDto(10, "金星", true);
+        PlanetPositionDto saved = makeDto(Integer.valueOf(10), "金星", true);
         when(planetService.createBatch(eq(1), anyList())).thenReturn(List.of(saved));
 
         mockMvc.perform(post("/api/clients/1/planets")
@@ -98,7 +98,7 @@ class PlanetPositionControllerTest {
     @DisplayName("PUT /api/clients/1/planets/5 — 200 isLord=true 編輯成功")
     void update_withIsLordTrue_returns200() throws Exception {
         PlanetPositionDto req    = makeDto(null, "金星", true);
-        PlanetPositionDto updated = makeDto(5,   "金星", true);
+        PlanetPositionDto updated = makeDto(Integer.valueOf(5),   "金星", true);
         when(planetService.update(eq(1), eq(5), any(PlanetPositionDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/clients/1/planets/5")
@@ -114,7 +114,7 @@ class PlanetPositionControllerTest {
     @DisplayName("PUT /api/clients/1/planets/5 — 200 isLord=false 取消命主星")
     void update_withIsLordFalse_returns200() throws Exception {
         PlanetPositionDto req     = makeDto(null, "金星", false);
-        PlanetPositionDto updated = makeDto(5,    "金星", false);
+        PlanetPositionDto updated = makeDto(Integer.valueOf(5),    "金星", false);
         when(planetService.update(eq(1), eq(5), any(PlanetPositionDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/clients/1/planets/5")
@@ -166,7 +166,7 @@ class PlanetPositionControllerTest {
     }
 
     /** id=null 簡化版（GET mock 用） */
-    private PlanetPositionDto makeDto(int id, String planet, boolean isLord) {
+    private PlanetPositionDto makeDto(Integer id, String planet, boolean isLord) {
         return makeDto((Integer) id, planet, isLord);
     }
 }
