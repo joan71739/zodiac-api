@@ -85,6 +85,3 @@ CREATE TABLE IF NOT EXISTS backup_records (
     note         VARCHAR(100) DEFAULT '手動備份',
     created_at   TIMESTAMP DEFAULT NOW()
 );
-
--- 插入唯一一筆預設設定（系統只有一位使用者，id 永遠為 1）
-INSERT INTO chart_preferences DEFAULT VALUES;
