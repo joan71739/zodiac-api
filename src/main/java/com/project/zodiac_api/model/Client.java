@@ -40,19 +40,19 @@ public class Client {
     private String ascSign;
  
     @Column(name = "asc_degree_num")
-    private Short ascDegreeNum;
+    private Integer ascDegreeNum;
  
     @Column(name = "asc_minute_num")
-    private Short ascMinuteNum;
+    private Integer ascMinuteNum;
  
     @Column(name = "mc_sign", length = 50)
     private String mcSign;
  
     @Column(name = "mc_degree_num")
-    private Short mcDegreeNum;
+    private Integer mcDegreeNum;
  
     @Column(name = "mc_minute_num")
-    private Short mcMinuteNum;
+    private Integer mcMinuteNum;
     // ─────────────────────────────────────────────────────────────────────
 
     @Column(name = "created_at")
