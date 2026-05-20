@@ -40,19 +40,19 @@ public class Client {
     private String ascSign;
 
     @Column(name = "asc_degree_num")
-    private Integer ascDegreeNum;
+    private Short ascDegreeNum;
 
     @Column(name = "asc_minute_num")
-    private Integer ascMinuteNum;
+    private Short ascMinuteNum;
 
     @Column(name = "mc_sign", length = 50)
     private String mcSign;
 
     @Column(name = "mc_degree_num")
-    private Integer mcDegreeNum;
+    private Short mcDegreeNum;
 
     @Column(name = "mc_minute_num")
-    private Integer mcMinuteNum;
+    private Short mcMinuteNum;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

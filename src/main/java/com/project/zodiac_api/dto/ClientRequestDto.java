@@ -22,10 +22,10 @@ public class ClientRequestDto {
 
     // 上升 / 天頂四軸資訊（選填，允許 null）
     private String  ascSign;
-    private Integer ascDegreeNum;
-    private Integer ascMinuteNum;
+    private Short ascDegreeNum;
+    private Short ascMinuteNum;
 
     private String  mcSign;
-    private Integer mcDegreeNum;
-    private Integer mcMinuteNum;
+    private Short mcDegreeNum;
+    private Short mcMinuteNum;
 }
