@@ -1,5 +1,5 @@
 -- =============================================
--- 占星顧問後台系統 — 初始化 Schema  (v9)
+-- 占星顧問後台系統 — 初始化 Schema
 -- =============================================
 
 -- 1. 客戶基本資訊
@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS clients (
     birth_time        TIME,
     birth_place       VARCHAR(200),
     chart_image_path  VARCHAR(500),
-    -- v9（V2 前置）：上升 / 天頂四軸資訊（允許 NULL）
     asc_sign          VARCHAR(50),
     asc_degree_num    SMALLINT CHECK (asc_degree_num BETWEEN 0 AND 29),
     asc_minute_num    SMALLINT CHECK (asc_minute_num BETWEEN 0 AND 59),
@@ -25,16 +24,13 @@ CREATE TABLE IF NOT EXISTS clients (
 CREATE TABLE IF NOT EXISTS planet_positions (
     id           SERIAL PRIMARY KEY,
     client_id    INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    planet       VARCHAR(50),   -- 太陽 / 月亮 / 水星 / 金星 / 火星 /
-                                -- 木星 / 土星 / 天王星 / 海王星 /
-                                -- 冥王星 / 凱龍星
-                                -- (v8 起：命主星改為 is_lord flag，不再是獨立列)
-    sign         VARCHAR(50),   -- 12 星座
-    degree_num   SMALLINT CHECK (degree_num BETWEEN 0 AND 29),  -- 度 0~29
-    minute_num   SMALLINT CHECK (minute_num BETWEEN 0 AND 59),  -- 分 0~59
+    planet       VARCHAR(50),
+    sign         VARCHAR(50),
+    degree_num   SMALLINT CHECK (degree_num BETWEEN 0 AND 29),
+    minute_num   SMALLINT CHECK (minute_num BETWEEN 0 AND 59),
     house        INTEGER CHECK (house BETWEEN 1 AND 12),
     notes        VARCHAR(200),
-    is_lord      BOOLEAN NOT NULL DEFAULT FALSE                  -- v8 新增：是否為命主星
+    is_lord      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- 3. 宮位守護星
@@ -52,7 +48,7 @@ CREATE TABLE IF NOT EXISTS aspects (
     id           SERIAL PRIMARY KEY,
     client_id    INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     planet1      VARCHAR(50),
-    aspect_type  VARCHAR(30),   -- CONJUNCTION / SEXTILE / SQUARE / TRINE / OPPOSITION
+    aspect_type  VARCHAR(30),
     planet2      VARCHAR(50),
     orb          DECIMAL(4,2),
     notes        TEXT
@@ -78,10 +74,17 @@ CREATE TABLE IF NOT EXISTS consultation_logs (
     created_at        TIMESTAMP DEFAULT NOW()
 );
 
--- 7. 備份記錄
+-- 7. 備份記錄（created_at 由 Java @PrePersist 填入，不使用 DB DEFAULT）
 CREATE TABLE IF NOT EXISTS backup_records (
     id           SERIAL PRIMARY KEY,
     file_path    VARCHAR(500) NOT NULL,
     note         VARCHAR(100) DEFAULT '手動備份',
-    created_at   TIMESTAMP DEFAULT NOW()
+    created_at   TIMESTAMP
 );
+
+-- 8. 星盤設定（系統只有一位使用者，id 永遠為 1）
+CREATE TABLE IF NOT EXISTS chart_preferences (
+    id SERIAL PRIMARY KEY
+);
+
+INSERT INTO chart_preferences DEFAULT VALUES;

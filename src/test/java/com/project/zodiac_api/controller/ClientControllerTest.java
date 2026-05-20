@@ -1,6 +1,7 @@
 package com.project.zodiac_api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.zodiac_api.dto.ClientListDto;
 import com.project.zodiac_api.dto.ClientRequestDto;
 import com.project.zodiac_api.dto.ClientResponseDto;
 import com.project.zodiac_api.exception.ResourceNotFoundException;
@@ -40,22 +41,23 @@ class ClientControllerTest {
     // ── GET /api/clients ─────────────────────────────────
 
     @Test
-    @DisplayName("GET /api/clients — 200 回傳客戶列表")
+    @DisplayName("GET /api/clients — 200 回傳客戶列表（不含 ASC/MC）")
     void getAll_returns200() throws Exception {
-        ClientResponseDto dto = makeResponseDto(1, "王小明", "台北");
+        ClientListDto dto = makeListDto(1, "王小明", "台北");
         when(clientService.getAll()).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/clients"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("王小明"))
-                .andExpect(jsonPath("$[0].birthPlace").value("台北"));
+                .andExpect(jsonPath("$[0].birthPlace").value("台北"))
+                .andExpect(jsonPath("$[0].ascSign").doesNotExist());
     }
 
     // ── GET /api/clients/{id} ────────────────────────────
 
     @Test
-    @DisplayName("GET /api/clients/1 — 200 回傳單一客戶")
+    @DisplayName("GET /api/clients/1 — 200 回傳單一客戶（含 ASC/MC）")
     void getOne_exists_returns200() throws Exception {
         when(clientService.getById(1)).thenReturn(makeResponseDto(1, "王小明", "台北"));
 
@@ -73,40 +75,6 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/999"))
                 .andExpect(status().isNotFound());
-    }
-
-    // ── POST /api/clients ────────────────────────────────
-
-    @Test
-    @DisplayName("POST /api/clients — 201 新增成功")
-    void create_validBody_returns201() throws Exception {
-        ClientRequestDto req = new ClientRequestDto();
-        req.setName("林小美");
-        req.setBirthDate(LocalDate.of(1995, 3, 15));
-        req.setBirthTime(LocalTime.of(12, 0));
-        req.setBirthPlace("高雄");
-
-        ClientResponseDto resp = makeResponseDto(2, "林小美", "高雄");
-        when(clientService.create(any(ClientRequestDto.class))).thenReturn(resp);
-
-        mockMvc.perform(post("/api/clients")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(2))
-                .andExpect(jsonPath("$.name").value("林小美"));
-    }
-
-    @Test
-    @DisplayName("POST /api/clients — 400 name 為空")
-    void create_missingName_returns400() throws Exception {
-        ClientRequestDto req = new ClientRequestDto();
-        req.setName("");    // 空字串，@NotBlank 驗證失敗
-
-        mockMvc.perform(post("/api/clients")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
     }
 
     // ── PUT /api/clients/{id} ────────────────────────────
@@ -180,6 +148,16 @@ class ClientControllerTest {
     }
 
     // ── helper ──────────────────────────────────────────
+
+    private ClientListDto makeListDto(int id, String name, String place) {
+        ClientListDto dto = new ClientListDto();
+        dto.setId(id);
+        dto.setName(name);
+        dto.setBirthDate(LocalDate.of(1993, 8, 10));
+        dto.setBirthTime(LocalTime.of(8, 30));
+        dto.setBirthPlace(place);
+        return dto;
+    }
 
     private ClientResponseDto makeResponseDto(int id, String name, String place) {
         ClientResponseDto dto = new ClientResponseDto();

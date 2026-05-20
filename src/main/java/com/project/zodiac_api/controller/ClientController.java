@@ -1,5 +1,6 @@
 package com.project.zodiac_api.controller;
 
+import com.project.zodiac_api.dto.ClientListDto;
 import com.project.zodiac_api.dto.ClientRequestDto;
 import com.project.zodiac_api.dto.ClientResponseDto;
 import com.project.zodiac_api.service.ClientService;
@@ -22,13 +23,13 @@ public class ClientController {
 
     private final ClientService clientService;
 
-    // GET /api/clients
+    // GET /api/clients — 列表，不含 ASC/MC
     @GetMapping
-    public ResponseEntity<List<ClientResponseDto>> getAll() {
+    public ResponseEntity<List<ClientListDto>> getAll() {
         return ResponseEntity.ok(clientService.getAll());
     }
 
-    // GET /api/clients/{id}
+    // GET /api/clients/{id} — 單筆，含 ASC/MC
     @GetMapping("/{id}")
     public ResponseEntity<ClientResponseDto> getOne(@PathVariable Integer id) {
         return ResponseEntity.ok(clientService.getById(id));

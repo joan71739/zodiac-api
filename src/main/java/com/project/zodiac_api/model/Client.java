@@ -35,25 +35,24 @@ public class Client {
     @Column(name = "chart_image_path", length = 500)
     private String chartImagePath;
 
-    // ── v9：上升 / 天頂四軸資訊（允許 NULL）─────────────────────────────
+    // 上升 / 天頂四軸資訊（允許 NULL）
     @Column(name = "asc_sign", length = 50)
     private String ascSign;
- 
+
     @Column(name = "asc_degree_num")
     private Integer ascDegreeNum;
- 
+
     @Column(name = "asc_minute_num")
     private Integer ascMinuteNum;
- 
+
     @Column(name = "mc_sign", length = 50)
     private String mcSign;
- 
+
     @Column(name = "mc_degree_num")
     private Integer mcDegreeNum;
- 
+
     @Column(name = "mc_minute_num")
     private Integer mcMinuteNum;
-    // ─────────────────────────────────────────────────────────────────────
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
