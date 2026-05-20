@@ -27,7 +27,9 @@ public class AnalysisNote {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "sort_order")
+    // 後端新增時自動取目前最大值 + 1；前端 POST 不傳此欄位
+    // nullable = false 與業務邏輯一致（Service 保證每次 save 前已設值）
+    @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
     @Column(name = "created_at")

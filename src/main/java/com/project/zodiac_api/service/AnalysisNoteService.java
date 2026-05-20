@@ -17,7 +17,7 @@ public class AnalysisNoteService {
     private final AnalysisNoteRepository noteRepo;
     private final ClientRepository clientRepo;
 
-    // GET — 依 sort_order 降序（v8：最新的在最上面）
+    // GET — 依 sort_order 降序，最新在最上
     public List<AnalysisNoteDto> getByClientId(Integer clientId) {
         ensureClientExists(clientId);
         return noteRepo.findByClientIdOrderBySortOrderDesc(clientId).stream()
@@ -25,7 +25,7 @@ public class AnalysisNoteService {
                 .toList();
     }
 
-    // POST — 新增（sort_order 後端自動遞增）
+    // POST — sort_order 後端自動遞增，前端不需傳入
     public AnalysisNoteDto create(Integer clientId, AnalysisNoteDto dto) {
         ensureClientExists(clientId);
         Integer maxOrder = noteRepo.findMaxSortOrderByClientId(clientId);
@@ -38,7 +38,7 @@ public class AnalysisNoteService {
         return AnalysisNoteDto.from(noteRepo.save(n));
     }
 
-    // PUT — 編輯
+    // PUT — 僅更新 title / content；sort_order 與 createdAt 不異動
     public AnalysisNoteDto update(Integer clientId, Integer nid, AnalysisNoteDto dto) {
         ensureClientExists(clientId);
         AnalysisNote n = noteRepo.findByClientIdAndId(clientId, nid)
