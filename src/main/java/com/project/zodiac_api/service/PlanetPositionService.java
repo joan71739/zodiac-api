@@ -18,19 +18,18 @@ public class PlanetPositionService {
     private final PlanetPositionRepository planetRepo;
     private final ClientRepository clientRepo;
 
-    // GET
+    // GET — 依 id 升冪回傳，確保順序與 INSERT 順序一致
     public List<PlanetPositionDto> getByClientId(Integer clientId) {
         ensureClientExists(clientId);
-        return planetRepo.findByClientId(clientId).stream()
+        return planetRepo.findByClientIdOrderByIdAsc(clientId).stream()
                 .map(PlanetPositionDto::from)
                 .toList();
     }
 
-    // POST — 初次整批建立
+    // POST — 初次整批建立；先刪舊資料防止重複 POST，再整批 saveAll
     @Transactional
     public List<PlanetPositionDto> createBatch(Integer clientId, List<PlanetPositionDto> dtos) {
         ensureClientExists(clientId);
-        // 清除舊資料（防止重複 POST）
         planetRepo.deleteByClientId(clientId);
 
         List<PlanetPosition> entities = dtos.stream().map(dto -> {
@@ -46,9 +45,9 @@ public class PlanetPositionService {
     }
 
     // PUT — 單筆編輯
-    // v8 BUG FIX：若 isLord=true，先清除同 client 所有行星的 isLord，
-    //             再設定當前行星 isLord=true，確保全局唯一性。
-    //             @Transactional 確保 clearLord + save 為同一個 DB transaction。
+    // 若 isLord=true，先以 clearLordByClientId 清除同 client 所有行星的旗標，
+    // 再設定當前行星，確保同一客戶全局唯一性。
+    // @Transactional 確保 clear + save 在同一 DB transaction 內完成。
     @Transactional
     public PlanetPositionDto update(Integer clientId, Integer pid, PlanetPositionDto dto) {
         ensureClientExists(clientId);
@@ -56,7 +55,6 @@ public class PlanetPositionService {
                 .filter(x -> x.getClientId().equals(clientId))
                 .orElseThrow(() -> new ResourceNotFoundException("PlanetPosition", pid));
 
-        // 若此次要設為命主星，先清除同 client 所有 isLord
         if (Boolean.TRUE.equals(dto.getIsLord())) {
             planetRepo.clearLordByClientId(clientId);
         }

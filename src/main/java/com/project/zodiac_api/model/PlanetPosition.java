@@ -31,12 +31,13 @@ public class PlanetPosition {
     @Column(name = "minute_num")
     private Short minuteNum;
 
+    @Column(name = "house")
     private Integer house;
 
     @Column(length = 200)
     private String notes;
 
-    // v8 新增：是否為命主星
+    // v8 新增：是否為命主星（同一客戶同時只有一列為 TRUE）
     @Column(name = "is_lord", nullable = false)
     private Boolean isLord = false;
 }
