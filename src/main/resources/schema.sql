@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS clients (
     birth_time        TIME,
     birth_place       VARCHAR(200),
     chart_image_path  VARCHAR(500),
-    -- v9：上升 / 天頂四軸資訊（選填，允許 NULL）
+    -- 上升 / 天頂四軸資訊（選填，允許 NULL）
     asc_sign          VARCHAR(50),
     asc_degree_num    SMALLINT CHECK (asc_degree_num BETWEEN 0 AND 29),
     asc_minute_num    SMALLINT CHECK (asc_minute_num BETWEEN 0 AND 59),
@@ -27,14 +27,13 @@ CREATE TABLE IF NOT EXISTS planet_positions (
     client_id    INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     planet       VARCHAR(50),   -- 太陽 / 月亮 / 水星 / 金星 / 火星 /
                                 -- 木星 / 土星 / 天王星 / 海王星 /
-                                -- 冥王星 / 凱龍星（共 11 顆）
-                                -- v8 起：命主星改為 is_lord flag，不再是獨立列
+                                -- 冥王星 / 凱龍星，共 11 顆
     sign         VARCHAR(50),   -- 12 星座
-    degree_num   SMALLINT CHECK (degree_num BETWEEN 0 AND 29),  -- 度 0~29
-    minute_num   SMALLINT CHECK (minute_num BETWEEN 0 AND 59),  -- 分 0~59
+    degree_num   SMALLINT CHECK (degree_num BETWEEN 0 AND 29),   -- 度 0~29
+    minute_num   SMALLINT CHECK (minute_num BETWEEN 0 AND 59),   -- 分 0~59
     house        INTEGER CHECK (house BETWEEN 1 AND 12),
     notes        VARCHAR(200),
-    is_lord      BOOLEAN NOT NULL DEFAULT FALSE                  -- v8 新增：是否為命主星
+    is_lord      BOOLEAN NOT NULL DEFAULT FALSE  -- 是否為命主星（radio 行為，同時只有一列為 TRUE）
 );
 
 -- 3. 宮位守護星
@@ -86,5 +85,10 @@ CREATE TABLE IF NOT EXISTS backup_records (
     created_at   TIMESTAMP DEFAULT NOW()
 );
 
--- 系統啟動時插入唯一一筆預設設定（id = 1）
+-- 8. 星盤設定（系統只有一位使用者，id 永遠為 1）
+CREATE TABLE IF NOT EXISTS chart_preferences (
+    id SERIAL PRIMARY KEY
+);
+
+-- 插入唯一一筆預設設定（系統啟動時執行，重複執行不影響）
 INSERT INTO chart_preferences DEFAULT VALUES;

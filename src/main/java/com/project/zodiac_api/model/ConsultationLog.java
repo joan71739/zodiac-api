@@ -27,7 +27,8 @@ public class ConsultationLog {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "created_at")
+    // updatable = false：建立後不允許透過 JPA 更新此欄位，防止維護時誤改
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
