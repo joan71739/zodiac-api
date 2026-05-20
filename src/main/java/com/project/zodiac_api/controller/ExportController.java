@@ -47,7 +47,7 @@ public class ExportController {
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("client",  ClientResponseDto.from(client));
-        data.put("planets", planetPositionRepo.findByClientId(id).stream().map(PlanetPositionDto::from).toList());
+        data.put("planets", planetPositionRepo.findByClientIdOrderByIdAsc(id).stream().map(PlanetPositionDto::from).toList());
         data.put("houses",  houseRepo.findByClientIdOrderByHouseNumberAsc(id).stream().map(HouseRulerDto::from).toList());
         data.put("aspects", aspectRepo.findByClientId(id).stream().map(AspectDto::from).toList());
 
