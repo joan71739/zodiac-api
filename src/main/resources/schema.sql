@@ -1,14 +1,20 @@
 -- =============================================
--- 占星顧問後台系統 — 初始化 Schema  (v13)
+-- 占星顧問後台系統 — 初始化 Schema  (v14)
 -- =============================================
 
--- 代碼對照表（先建，其他表邏輯上依賴它）---
+-- 代碼對照表
 CREATE TABLE IF NOT EXISTS code_references (
     id          SERIAL PRIMARY KEY,
     code        VARCHAR(10) NOT NULL UNIQUE,
     category    VARCHAR(20) NOT NULL CHECK (category IN ('planet', 'sign', 'aspect')),
     zh_name     VARCHAR(50) NOT NULL
 );
+
+COMMENT ON TABLE  code_references          IS '代碼對照表，統一管理行星、星座、相位的代碼與中文名稱';
+COMMENT ON COLUMN code_references.id       IS '流水號';
+COMMENT ON COLUMN code_references.code     IS '代碼（唯一值），例如 Q=太陽、a=牡羊座、q=合相';
+COMMENT ON COLUMN code_references.category IS '分類：planet=行星、sign=星座、aspect=相位';
+COMMENT ON COLUMN code_references.zh_name  IS '中文名稱，例如 太陽、牡羊座、合相';
 
 INSERT INTO code_references (code, category, zh_name) VALUES
 ('Q',  'planet',   '太陽'),
@@ -61,6 +67,22 @@ CREATE TABLE IF NOT EXISTS clients (
     updated_at        TIMESTAMP DEFAULT NOW()
 );
 
+COMMENT ON TABLE  clients                  IS '客戶基本資訊';
+COMMENT ON COLUMN clients.id               IS '流水號';
+COMMENT ON COLUMN clients.name             IS '客戶姓名';
+COMMENT ON COLUMN clients.birth_date       IS '出生日期';
+COMMENT ON COLUMN clients.birth_time       IS '出生時間';
+COMMENT ON COLUMN clients.birth_place      IS '出生地點';
+COMMENT ON COLUMN clients.chart_image_path IS '星盤圖片路徑';
+COMMENT ON COLUMN clients.asc_sign         IS '上升星座代碼，參考 code_references（category=sign）';
+COMMENT ON COLUMN clients.asc_degree_num   IS '上升度數（0~29）';
+COMMENT ON COLUMN clients.asc_minute_num   IS '上升分數（0~59）';
+COMMENT ON COLUMN clients.mc_sign          IS '天頂星座代碼，參考 code_references（category=sign）';
+COMMENT ON COLUMN clients.mc_degree_num    IS '天頂度數（0~29）';
+COMMENT ON COLUMN clients.mc_minute_num    IS '天頂分數（0~59）';
+COMMENT ON COLUMN clients.created_at       IS '建立時間';
+COMMENT ON COLUMN clients.updated_at       IS '最後更新時間';
+
 -- 2. 行星位置
 CREATE TABLE IF NOT EXISTS planet_positions (
     id            SERIAL PRIMARY KEY,
@@ -75,6 +97,18 @@ CREATE TABLE IF NOT EXISTS planet_positions (
     is_lord       BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+COMMENT ON TABLE  planet_positions               IS '客戶命盤行星位置';
+COMMENT ON COLUMN planet_positions.id            IS '流水號';
+COMMENT ON COLUMN planet_positions.client_id     IS '對應客戶 id';
+COMMENT ON COLUMN planet_positions.planet        IS '行星代碼，參考 code_references（category=planet）';
+COMMENT ON COLUMN planet_positions.sign          IS '所在星座代碼，參考 code_references（category=sign）';
+COMMENT ON COLUMN planet_positions.degree_num    IS '度數（0~29）';
+COMMENT ON COLUMN planet_positions.minute_num    IS '分數（0~59）';
+COMMENT ON COLUMN planet_positions.house         IS '所在宮位（1~12）';
+COMMENT ON COLUMN planet_positions.is_retrograde IS '是否逆行';
+COMMENT ON COLUMN planet_positions.notes         IS '備註';
+COMMENT ON COLUMN planet_positions.is_lord       IS '是否為命主星（同一客戶只有一列為 TRUE）';
+
 -- 3. 宮位守護星
 CREATE TABLE IF NOT EXISTS house_rulers (
     id             SERIAL PRIMARY KEY,
@@ -84,6 +118,14 @@ CREATE TABLE IF NOT EXISTS house_rulers (
     flies_to_sign  VARCHAR(10),
     flies_to_house INTEGER CHECK (flies_to_house BETWEEN 1 AND 12)
 );
+
+COMMENT ON TABLE  house_rulers               IS '各宮位守護星及其飛入位置';
+COMMENT ON COLUMN house_rulers.id            IS '流水號';
+COMMENT ON COLUMN house_rulers.client_id     IS '對應客戶 id';
+COMMENT ON COLUMN house_rulers.house_number  IS '宮位編號（1~12）';
+COMMENT ON COLUMN house_rulers.ruling_planet IS '守護星代碼，參考 code_references（category=planet）';
+COMMENT ON COLUMN house_rulers.flies_to_sign IS '守護星飛入的星座代碼，參考 code_references（category=sign）';
+COMMENT ON COLUMN house_rulers.flies_to_house IS '守護星飛入的宮位（1~12）';
 
 -- 4. 重要相位
 CREATE TABLE IF NOT EXISTS aspects (
@@ -96,6 +138,15 @@ CREATE TABLE IF NOT EXISTS aspects (
     notes        TEXT
 );
 
+COMMENT ON TABLE  aspects             IS '行星間的重要相位，單向儲存（A與B有相位只存一筆），查詢時需同時比對 planet1 和 planet2';
+COMMENT ON COLUMN aspects.id          IS '流水號';
+COMMENT ON COLUMN aspects.client_id   IS '對應客戶 id';
+COMMENT ON COLUMN aspects.planet1     IS '行星代碼，參考 code_references（category=planet）';
+COMMENT ON COLUMN aspects.aspect_type IS '相位代碼，參考 code_references（category=aspect）';
+COMMENT ON COLUMN aspects.planet2     IS '行星代碼，參考 code_references（category=planet）';
+COMMENT ON COLUMN aspects.orb         IS '容許度（度數）';
+COMMENT ON COLUMN aspects.notes       IS '備註';
+
 -- 5. 我的解析
 CREATE TABLE IF NOT EXISTS analysis_notes (
     id          SERIAL PRIMARY KEY,
@@ -107,6 +158,15 @@ CREATE TABLE IF NOT EXISTS analysis_notes (
     updated_at  TIMESTAMP DEFAULT NOW()
 );
 
+COMMENT ON TABLE  analysis_notes            IS '針對客戶命盤的解析筆記';
+COMMENT ON COLUMN analysis_notes.id         IS '流水號';
+COMMENT ON COLUMN analysis_notes.client_id  IS '對應客戶 id';
+COMMENT ON COLUMN analysis_notes.title      IS '解析標題';
+COMMENT ON COLUMN analysis_notes.content    IS '解析內容';
+COMMENT ON COLUMN analysis_notes.sort_order IS '排列順序，數字越小越前面';
+COMMENT ON COLUMN analysis_notes.created_at IS '建立時間';
+COMMENT ON COLUMN analysis_notes.updated_at IS '最後更新時間';
+
 -- 6. 諮詢記錄
 CREATE TABLE IF NOT EXISTS consultation_logs (
     id                SERIAL PRIMARY KEY,
@@ -116,6 +176,13 @@ CREATE TABLE IF NOT EXISTS consultation_logs (
     created_at        TIMESTAMP DEFAULT NOW()
 );
 
+COMMENT ON TABLE  consultation_logs                   IS '與客戶的諮詢記錄';
+COMMENT ON COLUMN consultation_logs.id                IS '流水號';
+COMMENT ON COLUMN consultation_logs.client_id         IS '對應客戶 id';
+COMMENT ON COLUMN consultation_logs.consultation_date IS '諮詢日期時間';
+COMMENT ON COLUMN consultation_logs.notes             IS '諮詢內容記錄';
+COMMENT ON COLUMN consultation_logs.created_at        IS '建立時間';
+
 -- 7. 備份記錄
 CREATE TABLE IF NOT EXISTS backup_records (
     id           SERIAL PRIMARY KEY,
@@ -124,14 +191,28 @@ CREATE TABLE IF NOT EXISTS backup_records (
     created_at   TIMESTAMP DEFAULT NOW()
 );
 
+COMMENT ON TABLE  backup_records           IS '資料庫備份紀錄';
+COMMENT ON COLUMN backup_records.id        IS '流水號';
+COMMENT ON COLUMN backup_records.file_path IS '備份檔案路徑';
+COMMENT ON COLUMN backup_records.note      IS '備份說明，預設為手動備份';
+COMMENT ON COLUMN backup_records.created_at IS '備份時間';
+
 -- 8. 星盤設定
 CREATE TABLE IF NOT EXISTS chart_preferences (
-    id                    SERIAL PRIMARY KEY,
-    orb_conjunction       DECIMAL(3,1) DEFAULT 8.0,   -- 合相
-    orb_opposition        DECIMAL(3,1) DEFAULT 8.0,   -- 對分相
-    orb_trine             DECIMAL(3,1) DEFAULT 8.0,   -- 三分相
-    orb_square            DECIMAL(3,1) DEFAULT 6.0,   -- 四分相
-    orb_sextile           DECIMAL(3,1) DEFAULT 6.0    -- 六分相
+    id              SERIAL PRIMARY KEY,
+    orb_conjunction DECIMAL(3,1) DEFAULT 8.0,
+    orb_opposition  DECIMAL(3,1) DEFAULT 8.0,
+    orb_trine       DECIMAL(3,1) DEFAULT 8.0,
+    orb_square      DECIMAL(3,1) DEFAULT 6.0,
+    orb_sextile     DECIMAL(3,1) DEFAULT 6.0
 );
+
+COMMENT ON TABLE  chart_preferences                IS '星盤全域設定，系統只有一筆（id=1）';
+COMMENT ON COLUMN chart_preferences.id             IS '流水號，永遠為 1';
+COMMENT ON COLUMN chart_preferences.orb_conjunction IS '合相容許度（度）';
+COMMENT ON COLUMN chart_preferences.orb_opposition  IS '對分相容許度（度）';
+COMMENT ON COLUMN chart_preferences.orb_trine       IS '三分相容許度（度）';
+COMMENT ON COLUMN chart_preferences.orb_square      IS '四分相容許度（度）';
+COMMENT ON COLUMN chart_preferences.orb_sextile     IS '六分相容許度（度）';
 
 INSERT INTO chart_preferences (id) VALUES (1);
