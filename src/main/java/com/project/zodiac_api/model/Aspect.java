@@ -21,13 +21,13 @@ public class Aspect {
     @Column(name = "client_id", nullable = false)
     private Integer clientId;
 
-    @Column(length = 50)
+    @Column(length = 10)
     private String planet1;
 
-    @Column(name = "aspect_type", length = 30)
+    @Column(name = "aspect_type", length = 10)
     private String aspectType;
 
-    @Column(length = 50)
+    @Column(length = 10)
     private String planet2;
 
     @Column(precision = 4, scale = 2)

@@ -33,17 +33,11 @@ public interface PlanetPositionRepository extends JpaRepository<PlanetPosition, 
     /**
      * 行星篩選查詢（用於 SearchController / ExportController）。
      *
-     * 命主星特殊處理：
-     *   - planet = '命主星' → 改查 is_lord = TRUE（v8 起命主星已無獨立列）
-     *   - 其他行星         → 正常比對 planet 欄位
      */
     @Query("""
         SELECT p FROM PlanetPosition p
-        WHERE (
-            (:planet <> '命主星' AND p.planet = :planet)
-            OR
-            (:planet = '命主星' AND p.isLord = TRUE)
-        )
+        WHERE 1 = 1
+        AND p.planet = :planet
         AND p.sign = :sign
         AND (:degreeFrom IS NULL OR p.degreeNum >= :degreeFrom)
         AND (:degreeTo   IS NULL OR p.degreeNum <= :degreeTo)

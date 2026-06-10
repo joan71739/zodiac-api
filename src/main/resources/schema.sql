@@ -115,8 +115,8 @@ CREATE TABLE IF NOT EXISTS house_rulers (
     client_id      INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     house_number   INTEGER NOT NULL CHECK (house_number BETWEEN 1 AND 12),
     ruling_planet  VARCHAR(10),
-    flies_to_sign  VARCHAR(10),
     flies_to_house INTEGER CHECK (flies_to_house BETWEEN 1 AND 12)
+    flies_to_sign  VARCHAR(10),
 );
 
 COMMENT ON TABLE  house_rulers               IS '各宮位守護星及其飛入位置';
@@ -124,8 +124,8 @@ COMMENT ON COLUMN house_rulers.id            IS '流水號';
 COMMENT ON COLUMN house_rulers.client_id     IS '對應客戶 id';
 COMMENT ON COLUMN house_rulers.house_number  IS '宮位編號（1~12）';
 COMMENT ON COLUMN house_rulers.ruling_planet IS '守護星代碼，參考 code_references（category=planet）';
-COMMENT ON COLUMN house_rulers.flies_to_sign IS '守護星飛入的星座代碼，參考 code_references（category=sign）';
 COMMENT ON COLUMN house_rulers.flies_to_house IS '守護星飛入的宮位（1~12）';
+COMMENT ON COLUMN house_rulers.flies_to_sign IS '守護星飛入的星座代碼，參考 code_references（category=sign）';
 
 -- 4. 重要相位
 CREATE TABLE IF NOT EXISTS aspects (

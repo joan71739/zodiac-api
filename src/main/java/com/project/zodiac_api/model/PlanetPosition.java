@@ -19,10 +19,10 @@ public class PlanetPosition {
     @Column(name = "client_id", nullable = false)
     private Integer clientId;
 
-    @Column(length = 50)
+    @Column(length = 10)
     private String planet;
 
-    @Column(length = 50)
+    @Column(length = 10)
     private String sign;
 
     @Column(name = "degree_num")
@@ -37,7 +37,7 @@ public class PlanetPosition {
     @Column(length = 200)
     private String notes;
 
-    // v8 新增：是否為命主星（同一客戶同時只有一列為 TRUE）
+    // 是否為命主星（同一客戶同時只有一列為 TRUE）
     @Column(name = "is_lord", nullable = false)
     private Boolean isLord = false;
 }

@@ -22,12 +22,13 @@ public class HouseRuler {
     @Column(name = "house_number", nullable = false)
     private Integer houseNumber;
 
-    @Column(name = "ruling_planet", length = 50)
+    @Column(name = "ruling_planet", length = 10)
     private String rulingPlanet;
-
-    @Column(name = "flies_to_sign", length = 50)
-    private String fliesToSign;
 
     @Column(name = "flies_to_house")
     private Integer fliesToHouse;
+
+    @Column(name = "flies_to_sign", length = 10)
+    private String fliesToSign;
+
 }

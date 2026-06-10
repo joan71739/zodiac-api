@@ -36,7 +36,7 @@ public class Client {
     private String chartImagePath;
 
     // 上升 / 天頂四軸資訊（允許 NULL）
-    @Column(name = "asc_sign", length = 50)
+    @Column(name = "asc_sign", length = 10)
     private String ascSign;
 
     @Column(name = "asc_degree_num")
@@ -45,7 +45,7 @@ public class Client {
     @Column(name = "asc_minute_num")
     private Short ascMinuteNum;
 
-    @Column(name = "mc_sign", length = 50)
+    @Column(name = "mc_sign", length = 10)
     private String mcSign;
 
     @Column(name = "mc_degree_num")
