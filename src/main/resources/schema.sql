@@ -1,12 +1,9 @@
 -- =============================================
--- 占星顧問後台系統 — 初始化 Schema  (v17)
+-- 占星顧問後台系統 — 初始化 Schema  (v18)
 -- 修改說明：
---   v16 → v17
---   1. analysis_notes 新增四個選填欄位：
---      planet_key  VARCHAR(10) NULL  ← 對應行星（選填）
---      sign_key    VARCHAR(10) NULL  ← 對應星座（選填）
---      house_key   SMALLINT    NULL  ← 對應宮位（選填）
---      topic       VARCHAR(20) NULL  ← 主題分類（選填）
+--   v17 → v18
+--   1. house_rulers 新增 house_sign VARCHAR(10) NULL
+--      記錄該宮位的起始星座（整宮制直接填入，其他宮位制亦可使用）
 -- =============================================
 
 -- 代碼對照表
@@ -121,11 +118,15 @@ COMMENT ON COLUMN planet_positions.is_retrograde IS '是否逆行';
 COMMENT ON COLUMN planet_positions.notes         IS '備註';
 COMMENT ON COLUMN planet_positions.is_lord       IS '是否為命主星（同一客戶只有一列為 TRUE）';
 
--- 3. 宮位守護星
+-- ============================================================
+-- 3. 宮位守護星 (house_rulers)
+-- 版本：v18（新增 house_sign 欄位）
+-- ============================================================
 CREATE TABLE IF NOT EXISTS house_rulers (
     id             SERIAL PRIMARY KEY,
     client_id      INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     house_number   INTEGER NOT NULL CHECK (house_number BETWEEN 1 AND 12),
+    house_sign     VARCHAR(10) NULL,
     ruling_planet  VARCHAR(10),
     flies_to_house INTEGER CHECK (flies_to_house BETWEEN 1 AND 12),
     flies_to_sign  VARCHAR(10)
@@ -135,6 +136,7 @@ COMMENT ON TABLE  house_rulers                IS '各宮位守護星及其飛入
 COMMENT ON COLUMN house_rulers.id             IS '流水號';
 COMMENT ON COLUMN house_rulers.client_id      IS '對應客戶 id';
 COMMENT ON COLUMN house_rulers.house_number   IS '宮位編號（1~12）';
+COMMENT ON COLUMN house_rulers.house_sign     IS '該宮位的起始星座代碼，參考 code_references（category=sign）；整宮制由上升星座依序推算';
 COMMENT ON COLUMN house_rulers.ruling_planet  IS '守護星代碼，參考 code_references（category=planet）';
 COMMENT ON COLUMN house_rulers.flies_to_house IS '守護星飛入的宮位（1~12）';
 COMMENT ON COLUMN house_rulers.flies_to_sign  IS '守護星飛入的星座代碼，參考 code_references（category=sign）';
@@ -161,35 +163,29 @@ COMMENT ON COLUMN aspects.notes       IS '備註';
 
 -- ============================================================
 -- 5. 我的解析 (analysis_notes)
--- 版本：v17（新增 planet_key / sign_key / house_key / topic 選填欄位）
 -- ============================================================
-
 CREATE TABLE IF NOT EXISTS analysis_notes (
     id          SERIAL PRIMARY KEY,
     client_id   INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     title       VARCHAR(200),
     content     TEXT,
-
-    -- 選填標記欄位（全部 NULL = 未標記，不影響自由書寫）
-    -- 填了之後 AI 可精準對應到 element_notes / transit_notes 的同 key 內容
-    planet_key  VARCHAR(10) NULL,   -- 對應行星（Q=太陽 W=月亮 E=水星...）
-    sign_key    VARCHAR(10) NULL,   -- 對應星座（a=牡羊 s=金牛...）
-    house_key   SMALLINT    NULL CHECK (house_key BETWEEN 1 AND 12),  -- 對應宮位
+    planet_key  VARCHAR(10) NULL,
+    sign_key    VARCHAR(10) NULL,
+    house_key   SMALLINT    NULL CHECK (house_key BETWEEN 1 AND 12),
     topic       VARCHAR(20) NULL
                 CHECK (topic IN ('general', 'career', 'love', 'wealth', 'challenge')),
-
     sort_order  INTEGER DEFAULT 0,
     created_at  TIMESTAMP DEFAULT NOW(),
     updated_at  TIMESTAMP DEFAULT NOW()
 );
 
-COMMENT ON TABLE  analysis_notes             IS '針對客戶命盤的解析筆記（v17：新增選填標記欄位）';
+COMMENT ON TABLE  analysis_notes             IS '針對客戶命盤的解析筆記';
 COMMENT ON COLUMN analysis_notes.id          IS '流水號';
 COMMENT ON COLUMN analysis_notes.client_id   IS '對應客戶 id';
 COMMENT ON COLUMN analysis_notes.title       IS '解析標題';
 COMMENT ON COLUMN analysis_notes.content     IS '解析內容';
-COMMENT ON COLUMN analysis_notes.planet_key  IS '對應行星代碼（選填）：Q太陽 W月亮 E水星 R金星 T火星 Y木星 U土星 I天王星 O海王星 P冥王星；NULL=未標記';
-COMMENT ON COLUMN analysis_notes.sign_key    IS '對應星座代碼（選填）：a牡羊 s金牛 d雙子 f巨蟹 g獅子 h處女 j天秤 k天蠍 l射手 z摩羯 x水瓶 c雙魚；NULL=未標記';
+COMMENT ON COLUMN analysis_notes.planet_key  IS '對應行星代碼（選填）';
+COMMENT ON COLUMN analysis_notes.sign_key    IS '對應星座代碼（選填）';
 COMMENT ON COLUMN analysis_notes.house_key   IS '對應宮位（選填）：1~12；NULL=未標記';
 COMMENT ON COLUMN analysis_notes.topic       IS '主題分類（選填）：general=核心特質、career=事業、love=感情、wealth=財富、challenge=課題；NULL=未分類';
 COMMENT ON COLUMN analysis_notes.sort_order  IS '排列順序，數字越小越前面';
@@ -252,7 +248,6 @@ INSERT INTO chart_preferences (id) VALUES (1);
 -- ============================================================
 -- 9. 元素解析知識庫 (element_notes)
 -- ============================================================
-
 CREATE TABLE IF NOT EXISTS element_notes (
     id           SERIAL       PRIMARY KEY,
     sign_key     VARCHAR(10)  NOT NULL,
@@ -281,7 +276,6 @@ CREATE INDEX IF NOT EXISTS idx_element_notes_lookup
 -- ============================================================
 -- 10. 行運解析知識庫 (transit_notes)
 -- ============================================================
-
 CREATE TABLE IF NOT EXISTS transit_notes (
     id               SERIAL       PRIMARY KEY,
     transit_planet   VARCHAR(10)  NOT NULL,
