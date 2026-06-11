@@ -11,14 +11,16 @@ public class HouseRulerDto {
 
     private Integer id;
     private Integer houseNumber;
-    private String rulingPlanet;
-    private String fliesToSign;
+    private String houseSign;
+    private String  rulingPlanet;
+    private String  fliesToSign;
     private Integer fliesToHouse;
 
     public static HouseRulerDto from(HouseRuler h) {
         HouseRulerDto dto = new HouseRulerDto();
         dto.id           = h.getId();
         dto.houseNumber  = h.getHouseNumber();
+        dto.houseSign    = h.getHouseSign();
         dto.rulingPlanet = h.getRulingPlanet();
         dto.fliesToSign  = h.getFliesToSign();
         dto.fliesToHouse = h.getFliesToHouse();
