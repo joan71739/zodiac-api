@@ -31,7 +31,6 @@ class PlanetPositionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 預設 clientId=1 存在
         when(clientRepo.existsById(1)).thenReturn(true);
         when(clientRepo.existsById(999)).thenReturn(false);
     }
@@ -43,13 +42,13 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("getByClientId — 回傳對應 client 的行星列表")
     void getByClientId_returnsListOfDtos() {
-        PlanetPosition p = makePlanet(1, 1, "太陽", false);
+        PlanetPosition p = makePlanet(1, 1, "Q", false);  // 太陽
         when(planetRepo.findByClientId(1)).thenReturn(List.of(p));
 
         List<PlanetPositionDto> result = planetService.getByClientId(1);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getPlanet()).isEqualTo("太陽");
+        assertThat(result.get(0).getPlanet()).isEqualTo("Q");
         assertThat(result.get(0).getIsLord()).isFalse();
     }
 
@@ -81,14 +80,14 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("createBatch — 含 isLord=true 的行星正確存入")
     void createBatch_withIsLordTrue_persistsFlag() {
-        PlanetPositionDto lordDto = makeDto("金星", true);
-        PlanetPosition lordEntity = makePlanet(10, 1, "金星", true);
+        PlanetPositionDto lordDto = makeDto("R", true);      // 金星
+        PlanetPosition lordEntity = makePlanet(10, 1, "R", true);
         when(planetRepo.saveAll(anyList())).thenReturn(List.of(lordEntity));
 
         List<PlanetPositionDto> result = planetService.createBatch(1, List.of(lordDto));
 
         assertThat(result.get(0).getIsLord()).isTrue();
-        assertThat(result.get(0).getPlanet()).isEqualTo("金星");
+        assertThat(result.get(0).getPlanet()).isEqualTo("R");
     }
 
     @Test
@@ -106,14 +105,13 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("update isLord=true — 先 clearLordByClientId 再 save（確保唯一性）")
     void update_withIsLordTrue_clearsThenSaves() {
-        PlanetPosition existing = makePlanet(5, 1, "金星", false);
+        PlanetPosition existing = makePlanet(5, 1, "R", false);  // 金星
         when(planetRepo.findById(5)).thenReturn(Optional.of(existing));
         when(planetRepo.save(any())).thenReturn(existing);
 
-        PlanetPositionDto dto = makeDto("金星", true);
+        PlanetPositionDto dto = makeDto("R", true);
         planetService.update(1, 5, dto);
 
-        // 必須先 clear 再 save
         var inOrder = inOrder(planetRepo);
         inOrder.verify(planetRepo).clearLordByClientId(1);
         inOrder.verify(planetRepo).save(existing);
@@ -124,14 +122,13 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("update isLord=false — 不呼叫 clearLordByClientId，直接 save")
     void update_withIsLordFalse_doesNotClear() {
-        PlanetPosition existing = makePlanet(5, 1, "金星", true);
+        PlanetPosition existing = makePlanet(5, 1, "R", true);
         when(planetRepo.findById(5)).thenReturn(Optional.of(existing));
         when(planetRepo.save(any())).thenReturn(existing);
 
-        PlanetPositionDto dto = makeDto("金星", false);
+        PlanetPositionDto dto = makeDto("R", false);
         planetService.update(1, 5, dto);
 
-        // isLord=false 時不需要 clear
         verify(planetRepo, never()).clearLordByClientId(anyInt());
         verify(planetRepo, times(1)).save(existing);
         assertThat(existing.getIsLord()).isFalse();
@@ -140,11 +137,11 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("update isLord=null — 視為 false，不呼叫 clearLordByClientId")
     void update_withIsLordNull_treatedAsFalse() {
-        PlanetPosition existing = makePlanet(5, 1, "水星", false);
+        PlanetPosition existing = makePlanet(5, 1, "E", false);  // 水星
         when(planetRepo.findById(5)).thenReturn(Optional.of(existing));
         when(planetRepo.save(any())).thenReturn(existing);
 
-        PlanetPositionDto dto = makeDto("水星", null);
+        PlanetPositionDto dto = makeDto("E", null);
         planetService.update(1, 5, dto);
 
         verify(planetRepo, never()).clearLordByClientId(anyInt());
@@ -156,7 +153,7 @@ class PlanetPositionServiceTest {
     void update_planetNotFound_throws() {
         when(planetRepo.findById(999)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> planetService.update(1, 999, makeDto("太陽", false)))
+        assertThatThrownBy(() -> planetService.update(1, 999, makeDto("Q", false)))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(planetRepo, never()).clearLordByClientId(anyInt());
         verify(planetRepo, never()).save(any());
@@ -165,11 +162,10 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("update — 行星存在但 clientId 不符時拋出 ResourceNotFoundException")
     void update_planetBelongsToOtherClient_throws() {
-        // planet id=5 屬於 clientId=2，不屬於 clientId=1
-        PlanetPosition wrongClient = makePlanet(5, 2, "太陽", false);
+        PlanetPosition wrongClient = makePlanet(5, 2, "Q", false);
         when(planetRepo.findById(5)).thenReturn(Optional.of(wrongClient));
 
-        assertThatThrownBy(() -> planetService.update(1, 5, makeDto("太陽", true)))
+        assertThatThrownBy(() -> planetService.update(1, 5, makeDto("Q", true)))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(planetRepo, never()).clearLordByClientId(anyInt());
     }
@@ -177,7 +173,7 @@ class PlanetPositionServiceTest {
     @Test
     @DisplayName("update — client 不存在時拋出 ResourceNotFoundException")
     void update_clientNotFound_throws() {
-        assertThatThrownBy(() -> planetService.update(999, 1, makeDto("太陽", false)))
+        assertThatThrownBy(() -> planetService.update(999, 1, makeDto("Q", false)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -190,7 +186,7 @@ class PlanetPositionServiceTest {
         p.setId(id);
         p.setClientId(clientId);
         p.setPlanet(planet);
-        p.setSign("獅子座");
+        p.setSign("g");             // 獅子座代碼
         p.setDegreeNum((short) 10);
         p.setMinuteNum((short) 0);
         p.setHouse(1);
@@ -201,7 +197,7 @@ class PlanetPositionServiceTest {
     private PlanetPositionDto makeDto(String planet, Boolean isLord) {
         PlanetPositionDto dto = new PlanetPositionDto();
         dto.setPlanet(planet);
-        dto.setSign("獅子座");
+        dto.setSign("g");           // 獅子座代碼
         dto.setDegreeNum((short) 10);
         dto.setMinuteNum((short) 0);
         dto.setHouse(1);
@@ -211,13 +207,13 @@ class PlanetPositionServiceTest {
 
     private List<PlanetPositionDto> makeDtoList(int count) {
         return java.util.stream.IntStream.range(0, count)
-                .mapToObj(i -> makeDto("行星" + i, false))
+                .mapToObj(i -> makeDto("Q", false))
                 .toList();
     }
 
     private List<PlanetPosition> makeEntityList(int count, int clientId) {
         return java.util.stream.IntStream.range(0, count)
-                .mapToObj(i -> makePlanet(i + 1, clientId, "行星" + i, false))
+                .mapToObj(i -> makePlanet(i + 1, clientId, "Q", false))
                 .toList();
     }
 }
