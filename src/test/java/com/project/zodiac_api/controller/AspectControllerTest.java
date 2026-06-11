@@ -39,15 +39,15 @@ class AspectControllerTest {
     @Test
     @DisplayName("GET /api/clients/1/aspects — 200 回傳相位列表")
     void getAll_returns200() throws Exception {
-        AspectDto dto = makeDto(1, "太陽", "CONJUNCTION", "水星", 2.0);
+        AspectDto dto = makeDto(1, "Q", "q", "E", 2.0);  // 太陽 合相 水星
         when(aspectService.getByClientId(1)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/clients/1/aspects"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].planet1").value("太陽"))
-                .andExpect(jsonPath("$[0].aspectType").value("CONJUNCTION"))
-                .andExpect(jsonPath("$[0].planet2").value("水星"));
+                .andExpect(jsonPath("$[0].planet1").value("Q"))
+                .andExpect(jsonPath("$[0].aspectType").value("q"))
+                .andExpect(jsonPath("$[0].planet2").value("E"));
     }
 
     @Test
@@ -66,13 +66,13 @@ class AspectControllerTest {
     @DisplayName("POST /api/clients/1/aspects — 201 新增成功")
     void create_returns201() throws Exception {
         AspectDto req = new AspectDto();
-        req.setPlanet1("太陽");
-        req.setAspectType("TRINE");
-        req.setPlanet2("木星");
+        req.setPlanet1("Q");        // 太陽
+        req.setAspectType("e");     // 三分相
+        req.setPlanet2("Y");        // 木星
         req.setOrb(BigDecimal.valueOf(3.5));
         req.setNotes("吉相");
 
-        AspectDto saved = makeDto(10, "太陽", "TRINE", "木星", 3.5);
+        AspectDto saved = makeDto(10, "Q", "e", "Y", 3.5);
         when(aspectService.create(eq(1), any(AspectDto.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/clients/1/aspects")
@@ -80,7 +80,7 @@ class AspectControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10))
-                .andExpect(jsonPath("$.aspectType").value("TRINE"));
+                .andExpect(jsonPath("$.aspectType").value("e"));
     }
 
     // ── PUT ─────────────────────────────────────────────
@@ -89,30 +89,30 @@ class AspectControllerTest {
     @DisplayName("PUT /api/clients/1/aspects/10 — 200 編輯成功")
     void update_returns200() throws Exception {
         AspectDto req = new AspectDto();
-        req.setPlanet1("太陽");
-        req.setAspectType("SQUARE");
-        req.setPlanet2("土星");
+        req.setPlanet1("Q");        // 太陽
+        req.setAspectType("r");     // 四分相
+        req.setPlanet2("U");        // 土星
         req.setOrb(BigDecimal.valueOf(1.5));
         req.setNotes("凶相");
 
-        AspectDto updated = makeDto(10, "太陽", "SQUARE", "土星", 1.5);
+        AspectDto updated = makeDto(10, "Q", "r", "U", 1.5);
         when(aspectService.update(eq(1), eq(10), any(AspectDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/clients/1/aspects/10")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.aspectType").value("SQUARE"))
-                .andExpect(jsonPath("$.planet2").value("土星"));
+                .andExpect(jsonPath("$.aspectType").value("r"))
+                .andExpect(jsonPath("$.planet2").value("U"));
     }
 
     @Test
     @DisplayName("PUT /api/clients/1/aspects/999 — 404 相位不存在")
     void update_notFound_returns404() throws Exception {
         AspectDto req = new AspectDto();
-        req.setPlanet1("太陽");
-        req.setAspectType("SQUARE");
-        req.setPlanet2("土星");
+        req.setPlanet1("Q");        // 太陽
+        req.setAspectType("r");     // 四分相
+        req.setPlanet2("U");        // 土星
 
         when(aspectService.update(eq(1), eq(999), any(AspectDto.class)))
                 .thenThrow(new ResourceNotFoundException("Aspect", 999));
