@@ -34,16 +34,16 @@ class PlanetPositionControllerTest {
     @Test
     @DisplayName("GET /api/clients/1/planets — 200 回傳行星列表，含 isLord 欄位")
     void getAll_returns200WithIsLord() throws Exception {
-        PlanetPositionDto sun  = makeDto(Integer.valueOf(1), "太陽",  false);
-        PlanetPositionDto venus = makeDto(Integer.valueOf(2), "金星", true);
+        PlanetPositionDto sun   = makeDto(Integer.valueOf(1), "Q", false);  // 太陽
+        PlanetPositionDto venus = makeDto(Integer.valueOf(2), "R", true);   // 金星
         when(planetService.getByClientId(1)).thenReturn(List.of(sun, venus));
 
         mockMvc.perform(get("/api/clients/1/planets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].planet").value("太陽"))
+                .andExpect(jsonPath("$[0].planet").value("Q"))
                 .andExpect(jsonPath("$[0].isLord").value(false))
-                .andExpect(jsonPath("$[1].planet").value("金星"))
+                .andExpect(jsonPath("$[1].planet").value("R"))
                 .andExpect(jsonPath("$[1].isLord").value(true));
     }
 
@@ -64,8 +64,8 @@ class PlanetPositionControllerTest {
     @Test
     @DisplayName("POST /api/clients/1/planets — 201 整批建立成功，回傳含 id 與 isLord")
     void createBatch_returns201() throws Exception {
-        PlanetPositionDto req = makeDto(null, "金星", true);
-        PlanetPositionDto saved = makeDto(Integer.valueOf(10), "金星", true);
+        PlanetPositionDto req   = makeDto(null, "R", true);                 // 金星
+        PlanetPositionDto saved = makeDto(Integer.valueOf(10), "R", true);
         when(planetService.createBatch(eq(1), anyList())).thenReturn(List.of(saved));
 
         mockMvc.perform(post("/api/clients/1/planets")
@@ -74,7 +74,7 @@ class PlanetPositionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(10))
-                .andExpect(jsonPath("$[0].planet").value("金星"))
+                .andExpect(jsonPath("$[0].planet").value("R"))
                 .andExpect(jsonPath("$[0].isLord").value(true));
     }
 
@@ -86,7 +86,7 @@ class PlanetPositionControllerTest {
 
         mockMvc.perform(post("/api/clients/999/planets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(List.of(makeDto(null, "太陽", false)))))
+                        .content(objectMapper.writeValueAsString(List.of(makeDto(null, "Q", false)))))
                 .andExpect(status().isNotFound());
     }
 
@@ -97,8 +97,8 @@ class PlanetPositionControllerTest {
     @Test
     @DisplayName("PUT /api/clients/1/planets/5 — 200 isLord=true 編輯成功")
     void update_withIsLordTrue_returns200() throws Exception {
-        PlanetPositionDto req    = makeDto(null, "金星", true);
-        PlanetPositionDto updated = makeDto(Integer.valueOf(5),   "金星", true);
+        PlanetPositionDto req     = makeDto(null, "R", true);
+        PlanetPositionDto updated = makeDto(Integer.valueOf(5), "R", true);
         when(planetService.update(eq(1), eq(5), any(PlanetPositionDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/clients/1/planets/5")
@@ -106,15 +106,15 @@ class PlanetPositionControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
-                .andExpect(jsonPath("$.planet").value("金星"))
+                .andExpect(jsonPath("$.planet").value("R"))
                 .andExpect(jsonPath("$.isLord").value(true));
     }
 
     @Test
     @DisplayName("PUT /api/clients/1/planets/5 — 200 isLord=false 取消命主星")
     void update_withIsLordFalse_returns200() throws Exception {
-        PlanetPositionDto req     = makeDto(null, "金星", false);
-        PlanetPositionDto updated = makeDto(Integer.valueOf(5),    "金星", false);
+        PlanetPositionDto req     = makeDto(null, "R", false);
+        PlanetPositionDto updated = makeDto(Integer.valueOf(5), "R", false);
         when(planetService.update(eq(1), eq(5), any(PlanetPositionDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/clients/1/planets/5")
@@ -132,7 +132,7 @@ class PlanetPositionControllerTest {
 
         mockMvc.perform(put("/api/clients/1/planets/999")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(makeDto(null, "太陽", false))))
+                        .content(objectMapper.writeValueAsString(makeDto(null, "Q", false))))
                 .andExpect(status().isNotFound());
     }
 
@@ -144,7 +144,7 @@ class PlanetPositionControllerTest {
 
         mockMvc.perform(put("/api/clients/999/planets/5")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(makeDto(null, "太陽", false))))
+                        .content(objectMapper.writeValueAsString(makeDto(null, "Q", false))))
                 .andExpect(status().isNotFound());
     }
 
@@ -152,12 +152,11 @@ class PlanetPositionControllerTest {
     // helper
     // ────────────────────────────────────────────────────
 
-    /** id 帶入 Integer，允許 null（新增時） */
     private PlanetPositionDto makeDto(Integer id, String planet, Boolean isLord) {
         PlanetPositionDto dto = new PlanetPositionDto();
         dto.setId(id);
         dto.setPlanet(planet);
-        dto.setSign("獅子座");
+        dto.setSign("g");           // 獅子座代碼
         dto.setDegreeNum((short) 17);
         dto.setMinuteNum((short) 28);
         dto.setHouse(10);
@@ -165,7 +164,6 @@ class PlanetPositionControllerTest {
         return dto;
     }
 
-    /** id=null 簡化版（GET mock 用） */
     private PlanetPositionDto makeDto(Integer id, String planet, boolean isLord) {
         return makeDto((Integer) id, planet, isLord);
     }
