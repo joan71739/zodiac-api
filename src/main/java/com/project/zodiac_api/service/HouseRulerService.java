@@ -16,7 +16,7 @@ import java.util.List;
 public class HouseRulerService {
 
     private final HouseRulerRepository houseRepo;
-    private final ClientRepository clientRepo;
+    private final ClientRepository     clientRepo;
 
     // GET — 依 houseNumber 排序回傳
     public List<HouseRulerDto> getByClientId(Integer clientId) {
@@ -62,8 +62,10 @@ public class HouseRulerService {
         }
     }
 
+    // v18：補上 houseSign
     private void mapDto(HouseRulerDto dto, HouseRuler h) {
         h.setHouseNumber(dto.getHouseNumber());
+        h.setHouseSign(dto.getHouseSign());
         h.setRulingPlanet(dto.getRulingPlanet());
         h.setFliesToSign(dto.getFliesToSign());
         h.setFliesToHouse(dto.getFliesToHouse());
