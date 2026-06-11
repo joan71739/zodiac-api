@@ -1,11 +1,8 @@
 -- =============================================
--- 占星顧問後台系統 — 初始化 Schema  (v15)
+-- 占星顧問後台系統 — 初始化 Schema  (v16)
 -- 修改說明：
---   1. code_references.code  VARCHAR(10) → VARCHAR(20)
---   2. code_references.category CHECK 加入 'topic'
---   3. code_references INSERT 新增 5 筆 topic 資料
---   4. element_notes 新增 topic 欄位（tag 之後）
---   5. house_rulers flies_to_house 補上缺少的逗號（語法修正）
+--   v15 → v16
+--   1. 新增 transit_notes table（行運解析知識庫）
 -- =============================================
 
 -- 代碼對照表
@@ -203,7 +200,7 @@ CREATE TABLE IF NOT EXISTS backup_records (
 );
 
 COMMENT ON TABLE  backup_records            IS '資料庫備份紀錄';
-COMMENT ON COLUMN backup_records.id         IS '流水號';
+COMMENT ON COLUMN backup_records.id         IS '備份檔案路徑';
 COMMENT ON COLUMN backup_records.file_path  IS '備份檔案路徑';
 COMMENT ON COLUMN backup_records.note       IS '備份說明，預設為手動備份';
 COMMENT ON COLUMN backup_records.created_at IS '備份時間';
@@ -252,17 +249,13 @@ CREATE TABLE IF NOT EXISTS element_notes (
 
     title        VARCHAR(200),
     content      TEXT,
-
-    -- 標籤欄位（手動輸入，第二批細作 UI）
     tag          VARCHAR(200),
 
     -- 主題分類（NULL = 未分類）
     topic        VARCHAR(20)  NULL
                  CHECK (topic IN ('general', 'career', 'love', 'wealth', 'challenge')),
 
-    -- 同一組合下排列順序，數字越大越新（最新在最上）
     sort_order   INTEGER      NOT NULL DEFAULT 0,
-
     created_at   TIMESTAMP    DEFAULT NOW(),
     updated_at   TIMESTAMP    DEFAULT NOW()
 );
@@ -284,13 +277,91 @@ CREATE INDEX IF NOT EXISTS idx_element_notes_lookup
     ON element_notes (sign_key, planet_key, house_key);
 
 -- 組合邏輯說明：
--- sign_key='a', planet_key=NULL, house_key=NULL  → 牡羊座  星座特性
--- sign_key='a', planet_key=NULL, house_key=1     → 牡羊座  一宮
--- sign_key='a', planet_key='Q',  house_key=NULL  → 太陽牡羊座  星座特性
--- sign_key='a', planet_key='Q',  house_key=1     → 太陽牡羊座  一宮
+-- sign_key='a', planet_key=NULL, house_key=NULL  → 牡羊座  星座特性頁籤
+-- sign_key='a', planet_key=NULL, house_key=1     → 牡羊座  一宮頁籤
+-- sign_key='a', planet_key='Q',  house_key=NULL  → 太陽牡羊座  星座特性頁籤
+-- sign_key='a', planet_key='Q',  house_key=1     → 太陽牡羊座  一宮頁籤
 --
 -- Service 層驗證規則：
 --   1. sign_key 必須為合法星座代碼（a/s/d/f/g/h/j/k/l/z/x/c）
 --   2. planet_key 若有值必須為合法行星代碼（Q/W/E/R/T/Y/U）
 --   3. house_key 若有值必須為 1~12（DB CHECK constraint 保證）
 --   4. topic 若有值必須為合法值（Service 層 Set 驗證）
+
+-- ============================================================
+-- 10. 行運解析知識庫 (transit_notes)
+-- 版本：v16（新增）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS transit_notes (
+    id               SERIAL       PRIMARY KEY,
+
+    -- 行運行星（必填）：Y=木星 U=土星 I=天王星 O=海王星 P=冥王星
+    -- 個人行星行運速度快，通常不建立知識庫，以外行星為主
+    transit_planet   VARCHAR(10)  NOT NULL,
+
+    -- 相位類型（NULL = 過境宮位情境，不針對本命星）
+    -- q=合相 w=對分相 e=三分相 r=四分相 t=六分相
+    aspect_type      VARCHAR(10)  NULL,
+
+    -- 本命星（NULL = 過境宮位情境）
+    -- Q=太陽 W=月亮 E=水星 R=金星 T=火星
+    natal_planet     VARCHAR(10)  NULL,
+
+    -- 行運行星過境的宮位（NULL = 行運星×相位×本命星情境）
+    -- 1~12 → 過境一宮~十二宮頁籤
+    transit_house    SMALLINT     NULL CHECK (transit_house BETWEEN 1 AND 12),
+
+    title            VARCHAR(200),
+    content          TEXT,
+    tag              VARCHAR(200),
+
+    -- 主題分類（NULL = 未分類）
+    topic            VARCHAR(20)  NULL
+                     CHECK (topic IN ('general', 'career', 'love', 'wealth', 'challenge')),
+
+    sort_order       INTEGER      NOT NULL DEFAULT 0,
+    created_at       TIMESTAMP    DEFAULT NOW(),
+    updated_at       TIMESTAMP    DEFAULT NOW()
+);
+
+COMMENT ON TABLE  transit_notes                  IS '系統層級行運解析知識庫（外行星×相位×本命星、外行星×過境宮位）';
+COMMENT ON COLUMN transit_notes.id               IS '流水號';
+COMMENT ON COLUMN transit_notes.transit_planet   IS '行運行星代碼：Y木星 U土星 I天王星 O海王星 P冥王星';
+COMMENT ON COLUMN transit_notes.aspect_type      IS '相位代碼：q合相 w對分相 e三分相 r四分相 t六分相；NULL=過境宮位情境';
+COMMENT ON COLUMN transit_notes.natal_planet     IS '本命星代碼：Q太陽 W月亮 E水星 R金星 T火星；NULL=過境宮位情境';
+COMMENT ON COLUMN transit_notes.transit_house    IS '行運行星過境的宮位（1~12）；NULL=行運星×相位×本命星情境';
+COMMENT ON COLUMN transit_notes.title            IS '解析段落標題';
+COMMENT ON COLUMN transit_notes.content          IS '解析內容（純文字）';
+COMMENT ON COLUMN transit_notes.tag              IS '標籤（手動輸入）';
+COMMENT ON COLUMN transit_notes.topic            IS '主題分類：general=核心特質、career=事業、love=感情、wealth=財富、challenge=課題；NULL=未分類';
+COMMENT ON COLUMN transit_notes.sort_order       IS '排列順序，數字越大越新（最新在最上）';
+COMMENT ON COLUMN transit_notes.created_at       IS '建立時間';
+COMMENT ON COLUMN transit_notes.updated_at       IS '最後更新時間';
+
+CREATE INDEX IF NOT EXISTS idx_transit_notes_lookup
+    ON transit_notes (transit_planet, aspect_type, natal_planet, transit_house);
+
+-- 組合邏輯說明：
+--
+-- 情境一：行運星 × 相位 × 本命星
+--   transit_planet='Y', aspect_type='q', natal_planet='Q', transit_house=NULL
+--   → 木星合相本命太陽（詳細解說頁籤）
+--
+--   transit_planet='Y', aspect_type='q', natal_planet='Q', transit_house=1
+--   → 木星合相本命太陽，且木星過境一宮時（頁籤一宮）
+--
+--   transit_planet='Y', aspect_type='q', natal_planet='Q', transit_house=10
+--   → 木星合相本命太陽，且木星過境十宮時（頁籤十宮）
+--
+-- 情境二：行運星 × 過境宮位（不針對本命星）
+--   transit_planet='Y', aspect_type=NULL, natal_planet=NULL, transit_house=2
+--   → 木星過境二宮（獨立入口）
+--
+-- Service 層驗證規則：
+--   1. transit_planet 必須為合法行星代碼
+--   2. aspect_type 若有值必須為合法相位代碼（q/w/e/r/t）
+--   3. natal_planet 若有值必須為合法行星代碼
+--   4. transit_house 若有值必須為 1~12（DB CHECK constraint 保證）
+--   5. aspect_type 與 natal_planet 必須同時有值或同時為 NULL（情境互斥）
+--   6. topic 若有值必須為合法值（Service 層 Set 驗證）
