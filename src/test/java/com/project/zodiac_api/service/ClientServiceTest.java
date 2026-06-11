@@ -43,10 +43,10 @@ class ClientServiceTest {
         sampleClient.setBirthDate(LocalDate.of(1993, 8, 10));
         sampleClient.setBirthTime(LocalTime.of(8, 30));
         sampleClient.setBirthPlace("台北");
-        sampleClient.setAscSign("天秤座");
+        sampleClient.setAscSign("j");       // 天秤座
         sampleClient.setAscDegreeNum(22);
         sampleClient.setAscMinuteNum(1);
-        sampleClient.setMcSign("巨蟹座");
+        sampleClient.setMcSign("f");        // 巨蟹座
         sampleClient.setMcDegreeNum(22);
         sampleClient.setMcMinuteNum(35);
     }
@@ -87,9 +87,9 @@ class ClientServiceTest {
         assertThat(result.getId()).isEqualTo(1);
         assertThat(result.getName()).isEqualTo("王小明");
         assertThat(result.getBirthPlace()).isEqualTo("台北");
-        assertThat(result.getAscSign()).isEqualTo("天秤座");
+        assertThat(result.getAscSign()).isEqualTo("j");   // 天秤座代碼
         assertThat(result.getAscDegreeNum()).isEqualTo(22);
-        assertThat(result.getMcSign()).isEqualTo("巨蟹座");
+        assertThat(result.getMcSign()).isEqualTo("f");    // 巨蟹座代碼
     }
 
     @Test
@@ -111,10 +111,10 @@ class ClientServiceTest {
         req.setBirthDate(LocalDate.of(1995, 3, 15));
         req.setBirthTime(LocalTime.of(12, 0));
         req.setBirthPlace("高雄");
-        req.setAscSign("射手座");
+        req.setAscSign("l");        // 射手座
         req.setAscDegreeNum(5);
         req.setAscMinuteNum(10);
-        req.setMcSign("處女座");
+        req.setMcSign("h");         // 處女座
         req.setMcDegreeNum(3);
         req.setMcMinuteNum(45);
 
@@ -124,10 +124,10 @@ class ClientServiceTest {
         saved.setBirthDate(req.getBirthDate());
         saved.setBirthTime(req.getBirthTime());
         saved.setBirthPlace("高雄");
-        saved.setAscSign("射手座");
+        saved.setAscSign("l");
         saved.setAscDegreeNum(5);
         saved.setAscMinuteNum(10);
-        saved.setMcSign("處女座");
+        saved.setMcSign("h");
         saved.setMcDegreeNum(3);
         saved.setMcMinuteNum(45);
 
@@ -137,8 +137,8 @@ class ClientServiceTest {
 
         assertThat(result.getId()).isEqualTo(2);
         assertThat(result.getName()).isEqualTo("林小美");
-        assertThat(result.getAscSign()).isEqualTo("射手座");
-        assertThat(result.getMcSign()).isEqualTo("處女座");
+        assertThat(result.getAscSign()).isEqualTo("l");   // 射手座代碼
+        assertThat(result.getMcSign()).isEqualTo("h");    // 處女座代碼
         verify(clientRepo, times(1)).save(any(Client.class));
     }
 
@@ -178,10 +178,10 @@ class ClientServiceTest {
         req.setBirthDate(LocalDate.of(1993, 8, 10));
         req.setBirthTime(LocalTime.of(8, 30));
         req.setBirthPlace("新北");
-        req.setAscSign("水瓶座");
+        req.setAscSign("x");        // 水瓶座
         req.setAscDegreeNum(10);
         req.setAscMinuteNum(5);
-        req.setMcSign("天蠍座");
+        req.setMcSign("k");         // 天蠍座
         req.setMcDegreeNum(8);
         req.setMcMinuteNum(20);
 
@@ -189,9 +189,9 @@ class ClientServiceTest {
 
         assertThat(sampleClient.getName()).isEqualTo("王大明");
         assertThat(sampleClient.getBirthPlace()).isEqualTo("新北");
-        assertThat(sampleClient.getAscSign()).isEqualTo("水瓶座");
+        assertThat(sampleClient.getAscSign()).isEqualTo("x");   // 水瓶座代碼
         assertThat(sampleClient.getAscDegreeNum()).isEqualTo(10);
-        assertThat(sampleClient.getMcSign()).isEqualTo("天蠍座");
+        assertThat(sampleClient.getMcSign()).isEqualTo("k");    // 天蠍座代碼
         assertThat(sampleClient.getMcDegreeNum()).isEqualTo(8);
     }
 
