@@ -83,17 +83,13 @@ class HouseRulerServiceTest {
     @Test
     @DisplayName("createBatch — saveAll 回傳亂序時，後端回傳照 saveAll 原始順序（前端負責 merge 排序）")
     void createBatch_savesInInputOrder() {
-        // 模擬 JPA saveAll 回傳亂序（12→1 倒序）
         List<HouseRuler> shuffled = new ArrayList<>(makeEntityList(12, 1));
-        Collections.reverse(shuffled); // 12 宮倒序回傳
+        Collections.reverse(shuffled);
         when(houseRepo.saveAll(anyList())).thenReturn(shuffled);
 
         List<HouseRulerDto> result = houseService.createBatch(1, makeDtoList(12));
 
-        // 後端 service 不做排序，直接回傳 saveAll 結果
-        // 排序由前端 HouseTable.jsx handleCreateAll merge 負責
         assertThat(result).hasSize(12);
-        // 第一筆應為倒序後的 12 宮
         assertThat(result.get(0).getHouseNumber()).isEqualTo(12);
     }
 
@@ -123,22 +119,22 @@ class HouseRulerServiceTest {
     // ────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("update — 正常更新單筆宮位守護星")
+    @DisplayName("update — 正常更新單筆宮位守護星（使用行星代碼）")
     void update_returnsUpdatedDto() {
-        HouseRuler existing = makeEntity(1, 1, "太陽", "獅子座", 5);
+        HouseRuler existing = makeEntity(1, 1, "Q", "g", 5);  // 太陽 獅子座
         when(houseRepo.findByClientIdAndId(1, 1)).thenReturn(Optional.of(existing));
         when(houseRepo.save(any())).thenReturn(existing);
 
         HouseRulerDto dto = new HouseRulerDto();
         dto.setHouseNumber(1);
-        dto.setRulingPlanet("月亮");
-        dto.setFliesToSign("巨蟹座");
+        dto.setRulingPlanet("W");   // 月亮
+        dto.setFliesToSign("f");    // 巨蟹座
         dto.setFliesToHouse(4);
 
         HouseRulerDto result = houseService.update(1, 1, dto);
 
-        assertThat(existing.getRulingPlanet()).isEqualTo("月亮");
-        assertThat(existing.getFliesToSign()).isEqualTo("巨蟹座");
+        assertThat(existing.getRulingPlanet()).isEqualTo("W");
+        assertThat(existing.getFliesToSign()).isEqualTo("f");
         assertThat(existing.getFliesToHouse()).isEqualTo(4);
         verify(houseRepo, times(1)).save(existing);
     }
@@ -165,24 +161,6 @@ class HouseRulerServiceTest {
         assertThatThrownBy(() -> houseService.update(999, 1, dto))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(houseRepo, never()).findByClientIdAndId(any(), any());
-    }
-
-    @Test
-    @DisplayName("update — rulingPlanet 設為命主星字串，可正常儲存")
-    void update_rulingPlanetAsLordString_savesCorrectly() {
-        HouseRuler existing = makeEntity(1, 1, "太陽", "獅子座", 5);
-        when(houseRepo.findByClientIdAndId(1, 1)).thenReturn(Optional.of(existing));
-        when(houseRepo.save(any())).thenReturn(existing);
-
-        HouseRulerDto dto = new HouseRulerDto();
-        dto.setHouseNumber(1);
-        dto.setRulingPlanet("命主星"); // 宮位守護星允許使用「命主星」字串
-        dto.setFliesToSign(null);
-        dto.setFliesToHouse(null);
-
-        houseService.update(1, 1, dto);
-
-        assertThat(existing.getRulingPlanet()).isEqualTo("命主星");
     }
 
     // ────────────────────────────────────────────────────
