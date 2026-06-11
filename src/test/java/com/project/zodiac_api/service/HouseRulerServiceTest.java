@@ -119,23 +119,44 @@ class HouseRulerServiceTest {
     // ────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("update — 正常更新單筆宮位守護星（使用行星代碼）")
+    @DisplayName("update — 正常更新單筆宮位守護星（含 houseSign）")
     void update_returnsUpdatedDto() {
-        HouseRuler existing = makeEntity(1, 1, "Q", "g", 5);  // 太陽 獅子座
+        // v18：makeEntity 加入 houseSign 參數（天秤座 = 'j'）
+        HouseRuler existing = makeEntity(1, 1, "j", "Q", "g", 5);
         when(houseRepo.findByClientIdAndId(1, 1)).thenReturn(Optional.of(existing));
         when(houseRepo.save(any())).thenReturn(existing);
 
         HouseRulerDto dto = new HouseRulerDto();
         dto.setHouseNumber(1);
+        dto.setHouseSign("j");      // 天秤座
         dto.setRulingPlanet("W");   // 月亮
         dto.setFliesToSign("f");    // 巨蟹座
         dto.setFliesToHouse(4);
 
-        HouseRulerDto result = houseService.update(1, 1, dto);
+        houseService.update(1, 1, dto);
 
+        assertThat(existing.getHouseSign()).isEqualTo("j");
         assertThat(existing.getRulingPlanet()).isEqualTo("W");
         assertThat(existing.getFliesToSign()).isEqualTo("f");
         assertThat(existing.getFliesToHouse()).isEqualTo(4);
+        verify(houseRepo, times(1)).save(existing);
+    }
+
+    @Test
+    @DisplayName("update — houseSign 為 null 時仍可正常儲存")
+    void update_nullHouseSign_savesSuccessfully() {
+        HouseRuler existing = makeEntity(1, 1, null, "Q", "g", 5);
+        when(houseRepo.findByClientIdAndId(1, 1)).thenReturn(Optional.of(existing));
+        when(houseRepo.save(any())).thenReturn(existing);
+
+        HouseRulerDto dto = new HouseRulerDto();
+        dto.setHouseNumber(1);
+        dto.setHouseSign(null);
+        dto.setRulingPlanet("Q");
+
+        houseService.update(1, 1, dto);
+
+        assertThat(existing.getHouseSign()).isNull();
         verify(houseRepo, times(1)).save(existing);
     }
 
@@ -167,11 +188,17 @@ class HouseRulerServiceTest {
     // helper
     // ────────────────────────────────────────────────────
 
-    private HouseRuler makeEntity(int id, int houseNumber, String planet, String sign, Integer fliesToHouse) {
+    /**
+     * v18：新增 houseSign 參數
+     * @param houseSign 宮位起始星座代碼（可為 null）
+     */
+    private HouseRuler makeEntity(int id, int houseNumber, String houseSign,
+                                  String planet, String sign, Integer fliesToHouse) {
         HouseRuler h = new HouseRuler();
         h.setId(id);
         h.setClientId(1);
         h.setHouseNumber(houseNumber);
+        h.setHouseSign(houseSign);
         h.setRulingPlanet(planet);
         h.setFliesToSign(sign);
         h.setFliesToHouse(fliesToHouse);
