@@ -13,14 +13,16 @@ public class ElementNoteDto {
 
     private Integer id;
 
-    // 查詢用（GET 時回傳供前端確認，POST/PUT 時由路徑參數傳入，不從 body 取）
     private String signKey;
-    private String planetKey;   // null = 純星座解析
-    private Short  houseKey;    // null = 星座特性頁籤
+    private String planetKey;
+    private Short  houseKey;
 
     private String title;
     private String content;
-    private String tag;         // 第一批先開欄位，第二批細作 UI
+    private String tag;
+
+    // 主題分類：general / career / love / wealth / challenge；null = 未分類
+    private String topic;
 
     private Integer sortOrder;
     private LocalDateTime createdAt;
@@ -35,6 +37,7 @@ public class ElementNoteDto {
         dto.title      = n.getTitle();
         dto.content    = n.getContent();
         dto.tag        = n.getTag();
+        dto.topic      = n.getTopic();
         dto.sortOrder  = n.getSortOrder();
         dto.createdAt  = n.getCreatedAt();
         dto.updatedAt  = n.getUpdatedAt();
