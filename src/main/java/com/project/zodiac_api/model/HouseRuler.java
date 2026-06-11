@@ -22,6 +22,9 @@ public class HouseRuler {
     @Column(name = "house_number", nullable = false)
     private Integer houseNumber;
 
+    @Column(name = "house_sign", length = 10)
+    private String houseSign;
+
     @Column(name = "ruling_planet", length = 10)
     private String rulingPlanet;
 
@@ -30,5 +33,4 @@ public class HouseRuler {
 
     @Column(name = "flies_to_sign", length = 10)
     private String fliesToSign;
-
 }
