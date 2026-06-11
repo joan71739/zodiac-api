@@ -216,3 +216,67 @@ COMMENT ON COLUMN chart_preferences.orb_square      IS '四分相容許度（度
 COMMENT ON COLUMN chart_preferences.orb_sextile     IS '六分相容許度（度）';
 
 INSERT INTO chart_preferences (id) VALUES (1);
+
+--20260611新增--
+-- ============================================================
+-- schema 新增：元素解析知識庫 (element_notes)
+-- ============================================================
+ 
+CREATE TABLE IF NOT EXISTS element_notes (
+    id           SERIAL       PRIMARY KEY,
+ 
+    -- 星座代碼（對應 code_references.code, category='sign'）
+    -- 十二星座：a s d f g h j k l z x c
+    sign_key     VARCHAR(10)  NOT NULL,
+ 
+    -- 行星代碼（行星×星座解析時填入：Q/W/E/R/T/Y/U）
+    -- NULL  → 純星座解析
+    -- NOT NULL → 行星×星座解析
+    planet_key   VARCHAR(10)  NULL,
+ 
+    -- 宮位（1~12）
+    -- NULL  → 星座特性頁籤（第一頁籤）
+    -- 1~12  → 一宮~十二宮頁籤
+    house_key    SMALLINT     NULL CHECK (house_key BETWEEN 1 AND 12),
+ 
+    title        VARCHAR(200),
+    content      TEXT,
+ 
+    -- 標籤欄位（第一批先開欄位；第二批細作 UI）
+    tag          VARCHAR(200),
+ 
+    -- 同一組合下排列順序，數字越大越新（最新在最上）
+    sort_order   INTEGER      NOT NULL DEFAULT 0,
+ 
+    created_at   TIMESTAMP    DEFAULT NOW(),
+    updated_at   TIMESTAMP    DEFAULT NOW()
+);
+ 
+-- ── 欄位說明 ────────────────────────────────────────────────
+COMMENT ON TABLE  element_notes              IS '系統層級占星元素解析知識庫（星座、行星×星座）';
+COMMENT ON COLUMN element_notes.id           IS '流水號';
+COMMENT ON COLUMN element_notes.sign_key     IS '星座代碼，對應 code_references（category=sign）：a牡羊 s金牛 d雙子 f巨蟹 g獅子 h處女 j天秤 k天蠍 l射手 z摩羯 x水瓶 c雙魚';
+COMMENT ON COLUMN element_notes.planet_key   IS '行星代碼：Q太陽 W月亮 E水星 R金星 T火星 Y木星 U土星；NULL=純星座解析';
+COMMENT ON COLUMN element_notes.house_key    IS '宮位（1~12）；NULL=星座特性頁籤';
+COMMENT ON COLUMN element_notes.title        IS '解析段落標題';
+COMMENT ON COLUMN element_notes.content      IS '解析內容（純文字）';
+COMMENT ON COLUMN element_notes.tag          IS '標籤（手動輸入，第二批細作）';
+COMMENT ON COLUMN element_notes.sort_order   IS '排列順序，數字越大越新（最新在最上）';
+COMMENT ON COLUMN element_notes.created_at   IS '建立時間';
+COMMENT ON COLUMN element_notes.updated_at   IS '最後更新時間';
+ 
+-- ── Index ──────────────────────────────────────────────────
+-- 前端查詢必定帶 sign_key + planet_key + house_key
+CREATE INDEX IF NOT EXISTS idx_element_notes_lookup
+    ON element_notes (sign_key, planet_key, house_key);
+ 
+-- ── 組合邏輯說明 ────────────────────────────────────────────
+-- sign_key='a', planet_key=NULL, house_key=NULL  → 牡羊座  星座特性
+-- sign_key='a', planet_key=NULL, house_key=1     → 牡羊座  一宮
+-- sign_key='a', planet_key='Q',  house_key=NULL  → 太陽牡羊座  星座特性
+-- sign_key='a', planet_key='Q',  house_key=1     → 太陽牡羊座  一宮
+--
+-- 後端 Service 層驗證規則：
+--   1. sign_key 必須為合法星座代碼（a/s/d/f/g/h/j/k/l/z/x/c）
+--   2. planet_key 若有值必須為合法行星代碼（Q/W/E/R/T/Y/U）
+--   3. house_key 若有值必須為 1~12（已由 CHECK constraint 保證）
