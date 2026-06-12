@@ -107,6 +107,46 @@ public class ExportController {
         return buildResponse(data, "export_search.json");
     }
 
+    // ============================================================
+// ExportController.java 新增區塊（貼在現有 ExportController 最後一個 @GetMapping 方法之後）
+// ============================================================
+
+    // ── 元素解析匯出 ────────────────────────────────────────────────────────
+
+    // GET /api/export/element-notes/signs
+    // 匯出全部十二星座解析（planet_key IS NULL）
+    @GetMapping("/element-notes/signs")
+    public ResponseEntity<byte[]> exportElementSigns() throws Exception {
+        List<ElementNoteDto> data = elementNoteRepo.findAllSignNotes().stream()
+                .map(ElementNoteDto::from)
+                .toList();
+        return buildResponse(data, "export_element_signs.json");
+    }
+
+    // GET /api/export/element-notes/planets
+    // 匯出全部行星×星座解析（planet_key IS NOT NULL）
+    @GetMapping("/element-notes/planets")
+    public ResponseEntity<byte[]> exportElementPlanets() throws Exception {
+        List<ElementNoteDto> data = elementNoteRepo.findAllPlanetNotes().stream()
+                .map(ElementNoteDto::from)
+                .toList();
+        return buildResponse(data, "export_element_planets.json");
+    }
+
+    // ── 行運解析匯出 ────────────────────────────────────────────────────────
+
+    // GET /api/export/transit-notes
+    // 匯出全部行運解析
+    @GetMapping("/transit-notes")
+    public ResponseEntity<byte[]> exportTransitNotes() throws Exception {
+        List<TransitNoteDto> data = transitNoteRepo.findAll(
+                Sort.by(Sort.Direction.ASC, "transitPlanet", "aspectType", "natalPlanet", "transitHouse", "sortOrder")
+        ).stream()
+                .map(TransitNoteDto::from)
+                .toList();
+        return buildResponse(data, "export_transit_notes.json");
+    }
+
     // ── helper ──────────────────────────────────────────
 
     private ResponseEntity<byte[]> buildResponse(Object data, String filename) throws Exception {
