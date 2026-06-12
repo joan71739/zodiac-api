@@ -302,3 +302,100 @@ COMMENT ON COLUMN transit_notes.sort_order       IS '排列順序，數字越大
 
 CREATE INDEX IF NOT EXISTS idx_transit_notes_lookup
     ON transit_notes (transit_planet, aspect_type, natal_planet, transit_house);
+
+-- =============================================
+-- !! 以下為 Seed 測試資料（我的命盤）
+-- 冪等：若 Joan 已存在則跳過
+-- =============================================
+DO $$
+DECLARE
+    v_id INTEGER;
+BEGIN
+    IF EXISTS (SELECT 1 FROM clients WHERE name = 'Joan') THEN
+        RAISE NOTICE 'Joan 已存在，跳過 seed。';
+        RETURN;
+    END IF;
+
+    -- 1. clients
+    INSERT INTO clients (
+        name, birth_place,
+        asc_sign, asc_degree_num, asc_minute_num,
+        mc_sign,  mc_degree_num,  mc_minute_num,
+        created_at, updated_at
+    ) VALUES (
+        'Joan', '台灣',
+        'j', 21, 58,
+        'f', 22, 32,
+        NOW(), NOW()
+    ) RETURNING id INTO v_id;
+
+    -- 2. planet_positions
+    INSERT INTO planet_positions (client_id, planet, sign, degree_num, minute_num, house, is_retrograde, notes, is_lord) VALUES
+        (v_id, 'Q',  'g', 17, 29, 10, FALSE, '得時，分數8',                    FALSE),
+        (v_id, 'W',  's', 11, 25,  7, FALSE, '慢，分數8',                      FALSE),
+        (v_id, 'E',  'f', 29, 47, 10, FALSE, '岐度29°，東出，分數12',           FALSE),
+        (v_id, 'R',  'f',  9, 23,  9, FALSE, '東出，分數6，命主星',             TRUE),
+        (v_id, 'T',  'h', 28, 46, 12, FALSE, '西入，分數3',                    FALSE),
+        (v_id, 'Y',  'j', 11, 12, 12, FALSE, '得時，西入，分數3',               FALSE),
+        (v_id, 'U',  'x', 27, 42,  5, TRUE,  '逆行，東出，分數10',              FALSE),
+        (v_id, 'I',  'z', 19,  7,  3, TRUE,  '逆行',                           FALSE),
+        (v_id, 'O',  'z', 19,  1,  3, TRUE,  '逆行',                           FALSE),
+        (v_id, 'P',  'k', 22, 44,  1, FALSE, NULL,                             FALSE),
+        (v_id, '‹',  'l',  8, 43,  2, TRUE,  '逆行',                           FALSE);
+
+    -- 3. house_rulers（整宮制）
+    INSERT INTO house_rulers (client_id, house_number, house_sign, ruling_planet, flies_to_house, flies_to_sign) VALUES
+        (v_id,  1, 'j', 'R',  9, 'f'),
+        (v_id,  2, 'k', 'T', 12, 'h'),
+        (v_id,  3, 'l', 'Y', 12, 'j'),
+        (v_id,  4, 'z', 'U',  5, 'x'),
+        (v_id,  5, 'x', 'U',  5, 'x'),
+        (v_id,  6, 'c', 'Y', 12, 'j'),
+        (v_id,  7, 'a', 'T', 12, 'h'),
+        (v_id,  8, 's', 'R',  9, 'f'),
+        (v_id,  9, 'd', 'E', 10, 'f'),
+        (v_id, 10, 'f', 'W',  7, 's'),
+        (v_id, 11, 'g', 'Q', 10, 'g'),
+        (v_id, 12, 'h', 'E', 10, 'f');
+
+    -- 4. aspects
+    INSERT INTO aspects (client_id, planet1, aspect_type, planet2, orb, notes) VALUES
+        (v_id, 'W', 'e', 'R', 2.03, '月亮金星互容接納，本垣+三分'),
+        (v_id, 'Q', 'e', 'U', NULL, '土星接納太陽，三分+界'),
+        (v_id, 'Q', 'e', 'Y', NULL, '木星接納太陽，三分+十度'),
+        (v_id, 'E', 'q', 'Y', NULL, '水星木星互容，水星岐度29°'),
+        (v_id, 'R', 'q', 'Y', NULL, '金星木星互容接納，吉合'),
+        (v_id, 'T', 'r', 'E', NULL, '水星接納火星（本垣+曜升+十度），四分'),
+        (v_id, 'U', 'w', 'Q', 9.22, '土星五宮對分太陽十宮'),
+        (v_id, 'Y', 'q', 'Z', NULL, '木星十二宮合上升'),
+        (v_id, 'P', 'q', 'Z', NULL, '冥王星合上升，天蠍一宮');
+
+    -- 5. analysis_notes
+    INSERT INTO analysis_notes (client_id, title, content, planet_key, sign_key, house_key, topic, sort_order) VALUES
+        (v_id, '上升天秤座 — 命主星金星九宮',
+         '上升天秤座，命主星金星落巨蟹座九宮，曜升（旺）。靈魂驅力指向高等學習、跨文化探索與美學追求，透過九宮的哲學與文化場域展現自我價值。',
+         'R', 'f', 9, 'general', 10),
+        (v_id, '太陽獅子十宮 — 事業舞台',
+         '太陽落獅子座十宮，得時（日間盤）。十宮事業與社會地位是主軸，獅子座的創意表達與被看見的需求透過職涯舞台展現，是命盤最強能量軸線之一。',
+         'Q', 'g', 10, 'career', 9),
+        (v_id, '水星巨蟹十宮岐度29° — 臨界轉化',
+         '水星落巨蟹座29度（岐度），十宮，守護九宮與十二宮。岐度代表某主題走到最後的關鍵節點，同時具有事業（十宮）與情感導向（巨蟹）。水星與木星互容。',
+         'E', 'f', 10, 'career', 8),
+        (v_id, '月亮金牛七宮 — 互容接納',
+         '月亮落金牛座七宮，與金星三分相且互容接納。感情與伴侶關係能量流暢，渴望安全感、穩定與感官連結，是命盤感情方面最和諧的配置。',
+         'W', 's', 7, 'love', 7),
+        (v_id, '土星水瓶五宮逆行 — 創作課題',
+         '土星逆行水瓶座五宮，守護四宮與五宮。五宮創作與自我表達受到土星制約，需透過時間與紀律解鎖創作自由，逆行加深內化與自我審查的傾向。',
+         'U', 'x', 5, 'challenge', 6),
+        (v_id, '木星天秤十二宮 — 隱藏的祝福',
+         '木星落天秤座十二宮，得時（西入）。十二宮的木星帶來隱密的幸運，在幕後、獨處或靈性修行中累積資源與智慧，守護三宮、六宮與九宮。',
+         'Y', 'j', 12, 'wealth', 5),
+        (v_id, '冥王星天蠍一宮 — 轉化力核心',
+         '冥王星合上升落天蠍座一宮，能量極強。天生具備深度洞察力與強烈轉化能量，外在給人神秘感，一生底層主題圍繞權力、控制與深層轉化。',
+         'P', 'k', 1, 'general', 4),
+        (v_id, '火星處女十二宮 — 隱形工作力',
+         '火星落處女座十二宮，守護二宮與七宮，西入（能量向內）。行動力隱藏，需要獨處才能充電，處女座火星極重細節，容易過度自我批評。',
+         'T', 'h', 12, 'challenge', 3);
+
+    RAISE NOTICE 'Joan seed 完成，client_id = %', v_id;
+END $$;
